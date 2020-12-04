@@ -1,0 +1,44 @@
+    <h1 class="my-3">카카오 토큰 정보</h1>
+    {% if token.error %}
+    <div class="alert alert-danger">
+
+        <div class="row">
+            <div class="col-sm-2">error</div>
+            <div class="col-sm-10">{{token.error}}</div>
+        </div>
+        <div class="row">
+            <div class="col-sm-2">error_description</div>
+            <div class="col-sm-10">{{token.error_description}}</div>
+        </div>
+    </div>
+    <a href="javascript:history.back()" class="btn btn-primary">돌아가기</a>
+
+    {% else %}
+    <div>
+        <div class="row">
+            <div class="col-sm-2">access_token</div>
+            <div class="col-sm-10">{{token.access_token}}</div>
+        </div>
+        <div class="row">
+            <div class="col-sm-2">token_type</div>
+            <div class="col-sm-10">{{token.token_type}}</div>
+        </div>
+        <div class="row">
+            <div class="col-sm-2">scope</div>
+            <div class="col-sm-10">{{token.scope}}</div>
+        </div>
+        <div class="row">
+            <div class="col-sm-2">expires_in</div>
+            <div class="col-sm-10">{{token.expires_in}}</div>
+        </div>
+        <div class="row">
+            <div class="col-sm-2">refresh_token</div>
+            <div class="col-sm-10">{{token.refresh_token}}</div>
+        </div>
+        <div class="row">
+            <div class="col-sm-2">refresh_token_expires_in</div>
+            <div class="col-sm-10">{{token.refresh_token_expires_in}}</div>
+        </div>
+    </div>
+    {% endif %}
+

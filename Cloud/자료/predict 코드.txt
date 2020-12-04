@@ -1,0 +1,93 @@
+import tensorflow as tf
+import numpy as np
+import cv2
+import matplotlib.pyplot as plt
+import os
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+from tensorflow.keras.models import load_model
+from mtcnn import MTCNN
+
+
+# 모델 불러오는 코드
+model = load_model('/home/lab07/Model_predict/Densenet201_model.h5')
+
+# 얼굴만 자르는 함수 코드
+def make_crop_img(image_file, detector):
+    result = detector.detect_faces(image_file)
+    if result == []:
+        print('No information')
+        return []
+    else:
+        bounding_box = result[0]['box']
+        
+        for a in range(4):
+            if bounding_box[a] < 0:
+                bounding_box[a] = 0
+                
+        resizeImageNDArray = image_file.copy()
+        resizeImageNDArray = image_file[bounding_box[1]:bounding_box[1]+bounding_box[3], bounding_box[0]:bounding_box[0]+bounding_box[2]]
+        resizeImageNDArray = cv2.resize(resizeImageNDArray, (224, 224), interpolation = cv2.INTER_CUBIC)
+        return resizeImageNDArray
+
+detector = MTCNN()
+
+# 실제 확인해보는 코드
+import glob
+
+# 사진 파일 주소
+path = glob.glob('/home/lab07/testset/wrong_mask/*.jpg')
+
+# 실제 사진이 들어갈 틀 만드는 코드
+fig1 = plt.figure(figsize=(10,10))
+fig2 = plt.figure(figsize=(10,10))
+
+axs1 = [] # subplot을 저장하는 리스트
+axs2 = [] 
+
+for i in range(len(path)):
+    axs1.append(fig1.add_subplot(4,4,i+1))
+    axs2.append(fig2.add_subplot(4,4,i+1))
+
+
+# 이미지 파일을 model에 집어넣어 예측하는 코드
+for idx, j in enumerate(path):
+    try:
+        images = cv2.cvtColor(cv2.imread(j), cv2.COLOR_BGR2RGB)  # 이미지를 읽어들여 BGR을 RGB변환
+        image = make_crop_img(images, detector) # 이미지에서 사람얼굴만 찾아서 자른다. => input2에서만 적용
+
+        face_input = cv2.resize(images, dsize=(224, 224)) # 모델에 집어넣기전 사이즈 조정
+        axs1[idx].imshow(images) # 사진틀에 이미지 저장
+        face_input = cv2.cvtColor(face_input, cv2.COLOR_BGR2RGB) # 이미지를 읽어들여 BGR을 RGB변환
+        face_input = preprocess_input(face_input)  
+        face_input = np.expand_dims(face_input, axis=0) # 모델에 넣기위한 형태 맞춤
+
+        mask1 = model.predict(face_input) # 모델에 이미지를 넣어 (0~1)값 출력
+
+        if mask1 > 0.5:
+            axs1[idx].set_title('no mask') # 0.5이상 no mask
+        else:
+            axs1[idx].set_title('mask')
+            print(np.float16(mask1))
+
+        face_input2 = cv2.resize(image, dsize=(224, 224))
+        axs2[idx].imshow(image)
+        face_input2 = cv2.cvtColor(face_input2, cv2.COLOR_BGR2RGB)
+        face_input2 = preprocess_input(face_input2)
+        face_input2 = np.expand_dims(face_input2, axis=0)
+        
+        # 위 코드와 같음
+
+        mask2 = model.predict(face_input2)
+
+        if mask2 > 0.5:
+            axs2[idx].set_title('no mask')
+        else:
+            axs2[idx].set_title('mask')
+            print(np.float16(mask2))
+
+    except:
+        pass
+
+fig1.tight_layout()
+fig2.tight_layout()
+plt.show()
