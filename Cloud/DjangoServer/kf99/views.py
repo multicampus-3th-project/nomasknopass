@@ -11,7 +11,7 @@ def mask(request):
         filename = str(request.FILES['file'])
         print(filename)
         handle_uploaded_file(request.FILES['file'], filename)
-        return HttpResponse("파일 받기")
+        return HttpResponse("파일 POST 완료")
 
 
 def handle_uploaded_file(f, filename):
