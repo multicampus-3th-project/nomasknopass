@@ -33,9 +33,6 @@ def green_rectangle():
 def yellow_rectangle():
     cv2.rectangle(frame, (int(cap_width/4),int(cap_height/6)),(int(cap_width*3/4),int(cap_height*5/6)), (0, 255, 255), 2)
 
-def human_approached(): #edge trigger
-    return False
-
 def face_detected(): #level trigger
     return False
 
@@ -46,12 +43,6 @@ def human_forcedPassed(): #edge trigger
     return False
 
 def manager_called(): #edge trigger
-    return False
-
-def human_passed(): #edge trigger
-    return False
-
-def human_returned(): #edge trigger
     return False
 
 def checking_mask():

@@ -1,7 +1,9 @@
 import cv2
-from picamera import PiCamera
+from picamera import PiCamera, PiCameraCircularIO
 from gpiozero import DistanceSensor
 from time import sleep
+import cv2
+import io
 
 sensor = DistanceSensor(13, 19)
 
