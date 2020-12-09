@@ -63,13 +63,12 @@ def mask_check(): #클라우드에서 신호를 받아서 처리하는 곳..
         lf_path = f_path
         limgsaved = imgsaved
         prnt_time = time.time()
-        if(lf_path != None) and (limgsaved == 1): #간격을 1로 둠
-            # imgfile = open(lf_path, 'rb')
+        if prnt_time-past_time > 0.5 and (lf_path != None) and (limgsaved == 1): #간격을 1로 둠
+            imgfile = open(lf_path, 'rb')
             # res = requests.post("http://3.35.178.102/mask/", files = {'file':imgfile})
-            # res = requests.post(url, files=files, data={"temperature":111}) #이거슨 그.. 온도도 보낼 때
-            # imgfile.close()
+            res = requests.post('http://3.35.178.102/predictmask/', files={'predictmask':imgfile}, data={"temperature":36.5}) #이거슨 그.. 온도도 보낼 때
+            imgfile.close()
             # print("posted")
-
             #여기서 f_path 값에 접근해서 파일 삭제
             try:
                 os.remove(lf_path)
@@ -80,14 +79,18 @@ def mask_check(): #클라우드에서 신호를 받아서 처리하는 곳..
             lf_path = None
             imgsaved = 0
             past_time = prnt_time
-
-            # mask_state = int(res.text)
-            # 0 쓴거
-            # 1 안쓴거
-            # 2 잘못쓴거
-            # 4 감지 못한거
-            # button.when_pressed = changestate
-            # time.sleep(0.5)
+            mask_state = res.json()['mask']
+            if   mask_state == 0:# 0 쓴거\
+                print("yesMasked")
+            elif mask_state == 1:# 1 안쓴거
+                print("noMasked")
+            elif mask_state == 2:# 2 잘못쓴거
+                print("wrongMasked")
+            elif mask_state == 4:# 4 감지 못한거
+                print("maskNotFound")
+            else:
+                continue
+            
 
 def human_state_check():
     print("begin human_state_check")
@@ -105,9 +108,11 @@ def human_state_check():
             hmn_state =  1
         elif past_hmn_dist > PASS_ZONE and prnt_hmn_dist < PASS_ZONE:
             print("human passed")
+            res = requests.post('http://3.35.178.102/ispass/',data={"ispass":'passed'})
             hmn_state = 2
         elif past_hmn_dist < CHECK_ZONE and prnt_hmn_dist > CHECK_ZONE and past_hmn_dist > CHECK_ZONE:
             print("human returned")
+            res = requests.post('http://3.35.178.102/ispass/',data={"ispass":'returned'})
             hmn_state = 3
         else:
             continue
@@ -117,10 +122,10 @@ def control_door(): #받은 신호와 사람 위치에 따라서 문을 열고 �
     print("begin control_door")
     global hmn_state
     global door_state
-    past_time = time.time()
+    past_noticed = time.time()
     while True:
-        prnt_noticed = time.time()
-        if (prnt_noticed-past_time)>3: #3초간격 실행슨
+        prnt_noticed = time.noticed()
+        if (prnt_noticed-past_noticed)>3: #3초간격 실행슨
             if (hmn_state == 1) and (mask_state == 0): # 사람이 포토존에 있고, 마스크를 썼을 경우 door_state = 1
                 door_state = 1
                 print("빨리 지나가세요")
@@ -135,14 +140,13 @@ def control_door(): #받은 신호와 사람 위치에 따라서 문을 열고 �
                 print("돌아가라")
             else:
                 continue
+            if (door_state == 1):
+                pi.set_servo_pulsewidth(25, 600)
+            elif(door_state == 0): #door_state == 0
+                pi.set_servo_pulsewidth(25, 2400)
+            else:
+                continue
             past_noticed = prnt_noticed 
-
-        if (door_state == 1):
-            pi.set_servo_pulsewidth(25, 600)
-        elif(door_state == 0): #door_state == 0
-            pi.set_servo_pulsewidth(25, 2400)
-        else:
-            continue
     return 0
 
 global human_distance
@@ -153,7 +157,7 @@ global mask_state
 global imgsaved
 
 human_distance = 0
-hmn_state  = -1
+hmn_state  = 1 #원래 -1이지만 test용..
 door_state = 0
 f_path = None
 mask_state = -1
