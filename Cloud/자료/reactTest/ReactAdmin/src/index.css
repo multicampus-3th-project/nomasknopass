@@ -11,3 +11,136 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+html, body {
+  background: rgb(217, 224, 224);
+}
+
+h1, p {
+  font-family: Lato;
+}
+
+h5 {
+  color:white;
+  padding: 8px;
+}
+
+.dashboardRow {
+  margin-top: 20px;
+}
+
+.dashboardPanel {
+  margin-top: 20px;
+}
+
+.card {
+  border: none;
+}
+
+.card-body {
+  background: rgba(19,124,144,1);
+  padding: 0px;
+}
+
+.card-title {
+  margin: 0.2rem;
+}
+
+.bg-light {
+    background-color: rgba(19,124,144,1)!important;
+}
+
+.navbar-light .navbar-brand {
+    color: rgba(255,255,255,.9);
+}
+
+.navbar-light .navbar-brand:focus, .navbar-light .navbar-brand:hover {
+    color: rgba(255,255,255,1);
+}
+
+.btn-outline-success {
+    color: white;
+    border-color: white;
+}
+
+.btn-outline-success:hover {
+    color: white;
+    background-color: rgba( 0, 193, 213, 0.5);
+    border-color: rgba( 0, 193, 213, 0.5);
+}
+
+.gauge {
+  min-height: 290px;
+  background: rgba(21,96,115,1);
+  padding: 10px;
+  padding-top: 40px;
+}
+
+.gauge .wj-value {
+  color:white;
+}
+
+.gauge .wj-min {
+  color:rgba(135, 166, 191, 1);
+}
+
+.gauge .wj-max {
+  color:rgba(135, 166, 191, 1);
+}
+
+.gauge .wj-pointer {
+  fill:rgba( 171,125,246, 1);
+}
+
+.gauge .wj-face path {
+  fill:rgba(135, 166, 191, 1);
+  stroke-width: 0px;
+}
+
+.wj-flexchart {
+  padding: 10px;
+  margin: 0px;
+  border: none;
+  background: rgba(21,96,115,1);
+}
+
+.wj-flexchart .wj-label{
+    fill: rgba(135, 166, 191, 1);
+}
+
+.wj-flexchart .wj-axis-x .wj-line {
+    stroke:rgba(135, 166, 191, 1);
+    stroke-width: 1px;
+}
+
+.wj-flexchart .wj-axis-y .wj-gridline {
+    stroke:rgba(135, 166, 191, 1);
+    stroke-width: 1px;
+}
+
+.wj-flexgrid {
+    border: none;
+    border-radius: 0;
+    background: rgb(21,96,115);
+    color:#fff;
+}
+
+.wj-flexgrid .wj-header {
+    background: rgb(19,88,109);
+    color: white;
+}
+
+.wj-flexgrid .wj-state-selected {
+    background: rgb(171,125,246);
+}
+.wj-flexgrid .wj-state-multi-selected {
+    background: rgba(171,125,246, 0.3);
+}
+
+.wj-flexgrid .wj-cell:not(.wj-header):not(.wj-group):not(.wj-state-selected):not(.wj-state-multi-selected) {
+    background: rgba(255,255,255,0.2);
+}
+
+.wj-flexgrid .wj-alt:not(.wj-header):not(.wj-group):not(.wj-state-selected):not(.wj-state-multi-selected) {
+    background: rgba(255,255,255,0.3);
+}
