@@ -1,0 +1,37 @@
+.gauge {
+    max-height: 200px;
+    max-width: 300px;
+    margin: auto;
+    padding: 1%;
+}
+.chart {
+    max-height: 150px;
+    max-width: 450px;
+    margin: auto;
+
+}
+.pie {
+    margin: auto;
+    max-width: 450px;
+}
+.transaction {
+    margin: auto;
+    max-width: 98%;
+}
+.wj-flexchart {
+    border: none;
+}
+.page {
+    width: 100%;
+    text-align: center;
+}
+.wj-cells .wj-cell.wj-state-selected {
+    background: #9a90d3;
+}
+.wj-cells .wj-cell.wj-state-multi-selected {
+    background: #b8b0e2;
+}
+.wj-gauge .wj-pointer, .wj-gauge .wj-needle {
+    fill: #538DE6;
+}
+

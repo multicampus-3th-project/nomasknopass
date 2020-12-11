@@ -9,7 +9,6 @@ import boto3
 import os
 
 image_dir = '/home/ubuntu/kf99_images/'
-temperature = 0.0
 lambda_client = boto3.client('lambda',
                              region_name='ap-northeast-2',
                              aws_access_key_id='AKIA53OSENDN4VXRF6JE',
@@ -30,12 +29,12 @@ def predict_mask(request):
         handle_uploaded_file(request.FILES['image'], filename)
 
         mask_result = predict_one(filename)
-        temperature_result = temperature_test(request.data['temperature'])
+        temperature_result = request.data['temperature']
 
         json_response = {"mask": mask_result,
                          "temperature": temperature_result}
-        global temperature
-        temperature = temperature_result
+
+        load.LoadConfig.temperature = temperature_result
 
         os.remove(image_dir + filename)
 
@@ -48,19 +47,15 @@ def insert_ispass(request):
     lambda_client.invoke(
         FunctionName='insert_DB',
         InvocationType='Event',
-        Payload=json.dumps({"ispass": request.data['ispass'], "temperature": temperature})
+        Payload=json.dumps({"ispass": request.data['ispass'], "temperature": load.LoadConfig.temperature})
     )
-    return HttpResponse("온도 " + temperature + "로 insert 완료")
+    return HttpResponse("loadconfig 온도 " + load.LoadConfig.temperature + "로 insert 완료")
 
 
 def handle_uploaded_file(f, filename):
     with open(image_dir + filename, 'wb+') as destination:
         for chunk in f.chunks():
             destination.write(chunk)
-
-
-def temperature_test(temperature):
-    return temperature
 
 
 # 얼굴만 자르는 함수 코드
