@@ -4,10 +4,10 @@ export const salesByCountry = [
   ]
   
   export const salesByPerson = [
-    { name: "Bill", sales: 5500},
-    { name: "Ted", sales: 7250},
-    { name: "Angela", sales: 8500},
-    { name: "Jill", sales: 10750}
+    { time: "6~10", count: 5500},
+    { time: "10~13", count: 7250},
+    { time: "13~16", count: 8500},
+    { time: "16~19", count: 10750}
   ]
   
   export const recentSales = [

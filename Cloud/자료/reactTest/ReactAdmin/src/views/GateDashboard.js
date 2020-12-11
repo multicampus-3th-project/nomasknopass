@@ -6,18 +6,47 @@ import 'wijmo/styles/wijmo.css';
 import { FlexGrid, FlexGridColumn } from 'wijmo/wijmo.react.grid';
 import { FlexChart, FlexPie, FlexChartSeries } from 'wijmo/wijmo.react.chart';
 import { RadialGauge } from 'wijmo/wijmo.react.gauge';
+import { CollectionView } from "wijmo/wijmo";
+import { CollectionViewNavigator } from "wijmo/wijmo.react.input";
 
 // Data imports
 import { recentSales, salesByCountry, salesByPerson } from '../data/data';
 
 // css
 import '../assets/css/now-ui-dashboard.css';
+import '../assets/css/main.css';
+// import '../index.css';
+
+import {
+  Card,
+  CardHeader,
+  CardBody,
+  CardFooter,
+  CardTitle,
+  Row,
+  Col,
+  UncontrolledDropdown,
+  DropdownToggle,
+  DropdownMenu,
+  DropdownItem,
+  Table,
+  Button,
+  Label,
+  FormGroup,
+  Input,
+  UncontrolledTooltip,
+} from "reactstrap";
+
 
 
 
 const ChartPanel = ({ title, children }) => { 
   return (
     <div className="col-lg-4 col-md-6 col-sm-12 mt-1">
+      <div className="card-header">
+        <h5 class="card-category">Global Sales</h5>
+        <h4 class="card-title">통계</h4>
+      </div>
       <div className="card dashboardPanel">
         <div className="card-body">
           <h5 className="card-title">{title}</h5>
@@ -43,7 +72,7 @@ const DataPanel = ({ title, children }) => {
   
 const Gauge = ({ data }) => {
   return (
-    <ChartPanel title="총 방문자 수">
+    // <ChartPanel title="총 방문자 수">
       <div className="gauge">
         <RadialGauge
           min={0} max={3000}
@@ -52,46 +81,55 @@ const Gauge = ({ data }) => {
           value={data}
         />
       </div>
-    </ChartPanel>
+    // </ChartPanel>
   );
 }
   
 const SalesChart = ({ salesData }) => {
   return (
-    <ChartPanel title="게이트 통과 여부">
+    // <ChartPanel title="게이트 통과 여부">
+    <div className="chart">
       <FlexChart itemsSource={salesData}
         bindingX="ispass"
-        style={{ height: "290px" }}
+        style={{ height: "250px" }}
         palette={['rgba(171,125,246, 1)']}>
         <FlexChartSeries name="count" binding="count" />
       </FlexChart>
-    </ChartPanel>
+      </div>
+    // </ChartPanel>
   );
 }
   
 const SalesPie = ({ salesData }) => {
   return (
-    <ChartPanel title="시간대별 방문자 수">
+    // <ChartPanel title="시간대별 방문자 수">
+    <div class="pie">
       <FlexPie itemsSource={salesData}
-        binding="sales"
-        bindingName="name"
+        binding="count"
+        bindingName="time"
         innerRadius={0.70}
-        style={{ height: "290px" }} 
+        style={{ height: "250px" }} 
                 palette={['rgba( 171,125,246, 1)', 'rgba( 38, 193, 201, 1)', 'rgba( 129,201, 38, 1)', 'rgba( 250, 202, 0, 1)']} />
-    </ChartPanel>
+    </div>
+    // </ChartPanel>
   );
 }
   
 const TransactionList = ({ transactions }) => {
   return (
-    <DataPanel title="방문 기록">
+    // <DataPanel title="방문 기록">
+    <div class="transaction">
       <FlexGrid style={{ width: "100%" }}
         itemsSource={transactions}>
-        <FlexGridColumn header="통과 여부" binding="ispass" width="2*" />
-        <FlexGridColumn header="방문 시각" binding="visited" width="3*" />
+        <FlexGridColumn header="통과 여부" binding="ispass" width="1*" />
         <FlexGridColumn header="체온" binding="temperature" width="1*" />
+        <FlexGridColumn header="방문 시각" binding="visited" width="2*" />
       </FlexGrid>
-    </DataPanel>
+      <div class="page">
+      <CollectionViewNavigator headerFormat="Page {currentPage:n0} of {pageCount:n0}" byPage={true} cv={transactions}/>
+      </div>
+      </div>
+    // </DataPanel>
   );
 }
 
@@ -100,29 +138,48 @@ const TransactionList = ({ transactions }) => {
     const [ ispassData, setIsPassData ] = useState([
       {"count": 0},
       {"count": 0}]);
-    const [ temp, setTemp ] = useState(salesByPerson);
+    const [ visitedCount, setVisitedCount ] = useState([]);
 
     useEffect(() => {
       _getDB();
       _getIsPass();
-    });
+      _getvisitedCount();
+    }, []);
 
     const dataEndpoint =
     "https://o43ghtnv70.execute-api.ap-northeast-2.amazonaws.com/dev/data";
     const ispassEndpoint = 
     "https://o43ghtnv70.execute-api.ap-northeast-2.amazonaws.com/dev/ispass";
+    const visitedEndpoint = 
+    "https://o43ghtnv70.execute-api.ap-northeast-2.amazonaws.com/dev/visitedcount";
+
 
     const _getDB = async () => {
+      let data = [];
       await axios.get(dataEndpoint).then((res) => {
-          setGateData(res.data);
+          // setGateData(res.data);
           console.log(res.data);
+          data = res.data;
       });
+      setGateData(new CollectionView(data, {
+        pageSize: 10,
+      }));
+    //   return new CollectionView(data, {
+    //     pageSize: 6,
+    // });
     };
 
     const _getIsPass = async () => {
       await axios.get(ispassEndpoint).then((res) => {
         setIsPassData(res.data)
         console.log(res.data);
+      })
+    }
+
+    const _getvisitedCount = async () => {
+      await axios.get(visitedEndpoint).then((res) => {
+        setVisitedCount(res.data)
+        console.log("visited : " + res.data);
       })
     }
 
@@ -137,14 +194,151 @@ const TransactionList = ({ transactions }) => {
       <>
           <div>
             <div className="content">
-              <div className="row">
-                <Gauge data={calculateSales()} />
-                <SalesChart salesData={ispassData } />
-                <SalesPie salesData={temp} />
-              </div>
-              <div className="row">
-                <TransactionList transactions={gateData} />
-              </div>
+
+            <Row>
+            <Col xs={12} md={4}>
+              <Card className="card-chart">
+                <CardHeader>
+                  <h5 className="card-category">Gate Total</h5>
+                  <CardTitle tag="h4">총 방문자 수</CardTitle>
+                  <UncontrolledDropdown>
+                    <DropdownToggle
+                      className="btn-round btn-outline-default btn-icon"
+                      color="default"
+                    >
+                      <i className="now-ui-icons loader_gear" />
+                    </DropdownToggle>
+                    <DropdownMenu right>
+                      <DropdownItem>Action</DropdownItem>
+                      <DropdownItem>Another Action</DropdownItem>
+                      <DropdownItem>Something else here</DropdownItem>
+                      <DropdownItem className="text-danger">
+                        Remove data
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </UncontrolledDropdown>
+                </CardHeader>
+                <CardBody>
+                  <div className="chart-area">
+                  <Gauge data={calculateSales()} />
+                  </div>
+                </CardBody>
+                <CardFooter>
+                  <div className="stats">
+                    <i className="now-ui-icons arrows-1_refresh-69" /> Just
+                    Updated
+                  </div>
+                </CardFooter>
+              </Card>
+            </Col>
+            <Col xs={12} md={4}>
+              <Card className="card-chart">
+                <CardHeader>
+                  <h5 className="card-category">Gate Total</h5>
+                  <CardTitle tag="h4">게이트 통과 여부</CardTitle>
+                  <UncontrolledDropdown>
+                    <DropdownToggle
+                      className="btn-round btn-outline-default btn-icon"
+                      color="default"
+                    >
+                      <i className="now-ui-icons loader_gear" />
+                    </DropdownToggle>
+                    <DropdownMenu right>
+                      <DropdownItem>Action</DropdownItem>
+                      <DropdownItem>Another Action</DropdownItem>
+                      <DropdownItem>Something else here</DropdownItem>
+                      <DropdownItem className="text-danger">
+                        Remove data
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </UncontrolledDropdown>
+                </CardHeader>
+                <CardBody>
+                  <div className="chart-area">
+                  <SalesChart salesData={ispassData } />
+                  </div>
+                </CardBody>
+                <CardFooter>
+                  <div className="stats">
+                    <i className="now-ui-icons arrows-1_refresh-69" /> Just
+                    Updated
+                  </div>
+                </CardFooter>
+              </Card>
+            </Col>
+            <Col xs={12} md={4}>
+              <Card className="card-chart">
+                <CardHeader>
+                  <h5 className="card-category">Gate Total</h5>
+                  <CardTitle tag="h4">시간대별 방문자 수</CardTitle>
+                  <UncontrolledDropdown>
+                    <DropdownToggle
+                      className="btn-round btn-outline-default btn-icon"
+                      color="default"
+                    >
+                      <i className="now-ui-icons loader_gear" />
+                    </DropdownToggle>
+                    <DropdownMenu right>
+                      <DropdownItem>Action</DropdownItem>
+                      <DropdownItem>Another Action</DropdownItem>
+                      <DropdownItem>Something else here</DropdownItem>
+                      <DropdownItem className="text-danger">
+                        Remove data
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </UncontrolledDropdown>
+                </CardHeader>
+                <CardBody>
+                  <div className="chart-area">
+                  <SalesPie salesData={visitedCount} />
+                  </div>
+                </CardBody>
+                <CardFooter>
+                  <div className="stats">
+                    <i className="now-ui-icons arrows-1_refresh-69" /> Just
+                    Updated
+                  </div>
+                </CardFooter>
+              </Card>
+            </Col>
+            </Row>
+            <Row>
+            <Col xs={12} md={0}>
+              <Card className="card-chart card-chart-long">
+                <CardHeader>
+                  <h5 className="card-category">Gate Total</h5>
+                  <CardTitle tag="h4">방문 기록</CardTitle>
+                  <UncontrolledDropdown>
+                    <DropdownToggle
+                      className="btn-round btn-outline-default btn-icon"
+                      color="default"
+                    >
+                      <i className="now-ui-icons loader_gear" />
+                    </DropdownToggle>
+                    <DropdownMenu right>
+                      <DropdownItem>Action</DropdownItem>
+                      <DropdownItem>Another Action</DropdownItem>
+                      <DropdownItem>Something else here</DropdownItem>
+                      <DropdownItem className="text-danger">
+                        Remove data
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </UncontrolledDropdown>
+                </CardHeader>
+                <CardBody>
+                  <div className="chart-area">
+                  <TransactionList transactions={gateData} />
+                  </div>
+                </CardBody>
+                <CardFooter>
+                  <div className="stats">
+                    <i className="now-ui-icons arrows-1_refresh-69" /> Just
+                    Updated
+                  </div>
+                </CardFooter>
+              </Card>
+            </Col>
+            </Row>
             </div>
             </div>
           </>

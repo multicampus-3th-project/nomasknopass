@@ -1,19 +1,5 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-
 html, body {
-  background: rgb(217, 224, 224);
+  background: rgba( 0, 193, 213, 1);
 }
 
 h1, p {
@@ -38,7 +24,8 @@ h5 {
 }
 
 .card-body {
-  background: rgba(19,124,144,1);
+  border-radius: 0.25rem;
+  background: rgb(86, 89, 90);
   padding: 0px;
 }
 
@@ -70,8 +57,8 @@ h5 {
 }
 
 .gauge {
-  min-height: 290px;
-  background: rgba(21,96,115,1);
+  min-height: 330px;
+  background: rgb(36, 38, 39);
   padding: 10px;
   padding-top: 40px;
 }
@@ -101,7 +88,7 @@ h5 {
   padding: 10px;
   margin: 0px;
   border: none;
-  background: rgba(21,96,115,1);
+  background: rgb(36, 38, 39);
 }
 
 .wj-flexchart .wj-label{
@@ -121,12 +108,12 @@ h5 {
 .wj-flexgrid {
     border: none;
     border-radius: 0;
-    background: rgb(21,96,115);
+    background: rgb(86, 89, 90);
     color:#fff;
 }
 
 .wj-flexgrid .wj-header {
-    background: rgb(19,88,109);
+    background: rgb(36, 38, 39);
     color: white;
 }
 

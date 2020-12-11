@@ -16,7 +16,8 @@
     "react-scripts": "4.0.1",
     "reactstrap": "8.4.1",
     "web-vitals": "^0.2.4",
-    "wijmo": "^5.20183.568"
+    "wijmo": "^5.20183.568",
+    "react-chartjs-2": "2.9.0"
   },
   "scripts": {
     "start": "react-scripts start",
