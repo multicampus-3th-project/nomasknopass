@@ -9,6 +9,7 @@ import boto3
 import os
 
 image_dir = '/home/ubuntu/kf99_images/'
+temperature = 0.0
 lambda_client = boto3.client('lambda',
                              region_name='ap-northeast-2',
                              aws_access_key_id='AKIA53OSENDN4VXRF6JE',
@@ -17,35 +18,49 @@ lambda_client = boto3.client('lambda',
 
 
 @api_view(['GET', 'POST'])
-def mask(request):
+def predict_mask(request):
     if request.method == 'GET':
         return HttpResponse("웹페이지 확인용")
 
     elif request.method == 'POST':
         # file = request.FILES['file']
-        filename = str(request.FILES['file'])
+        filename = str(request.FILES['image'])
         print(filename)
         # image_file = request.FILES['file']
-        handle_uploaded_file(request.FILES['file'], filename)
-        result = predict_one(filename)
-        json_response = {"result": result}
+        handle_uploaded_file(request.FILES['image'], filename)
 
-        response = lambda_client.invoke(
-            FunctionName='insert_DB',
-            InvocationType='Event',
-            Payload=json.dumps({"ispass": "0", "temperature": "36.5"})
-        )
-        print(str(response))
+        mask_result = predict_one(filename)
+        temperature_result = temperature_test(request.data['temperature'])
+
+        json_response = {"mask": mask_result,
+                         "temperature": temperature_result}
+        global temperature
+        temperature = temperature_result
 
         os.remove(image_dir + filename)
 
         return JsonResponse(json_response)
 
 
+@api_view(['POST'])
+def insert_ispass(request):
+    global temperature
+    lambda_client.invoke(
+        FunctionName='insert_DB',
+        InvocationType='Event',
+        Payload=json.dumps({"ispass": request.data['ispass'], "temperature": temperature})
+    )
+    return HttpResponse("온도 " + temperature + "로 insert 완료")
+
+
 def handle_uploaded_file(f, filename):
     with open(image_dir + filename, 'wb+') as destination:
         for chunk in f.chunks():
             destination.write(chunk)
+
+
+def temperature_test(temperature):
+    return temperature
 
 
 # 얼굴만 자르는 함수 코드
@@ -90,23 +105,23 @@ def predict_one(filename):
         result = np.argmax(mask1)
 
         if result == 0:
-            return "mask"
+            return 0
 
         elif result == 1:
             if message == 'not_detected_nose':
-                return "mask"
+                return 0
             else:
-                return "no mask"
+                return 1
 
         else:
             if message == 'not_detected_nose':
-                return "mask"
+                return 0
             else:
-                return "incorrect mask"
+                return 2
 
 
     except:
-        return "error"
+        return 4
 
 
 # 폴더내에 있는 여러장

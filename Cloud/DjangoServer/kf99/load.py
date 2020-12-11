@@ -9,6 +9,7 @@ class LoadConfig(AppConfig):
     haarcascade_dir = '/home/lab07/MTCNN HaarCascade'
     nose_cascade = cv2.CascadeClassifier(haarcascade_dir + '/haarcascade_mcs_nose.xml')
     detector = MTCNN()
+    temperature = 0
 
     def ready(self):
         pass
