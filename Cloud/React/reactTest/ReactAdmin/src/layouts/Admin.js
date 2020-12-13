@@ -6,6 +6,8 @@ import { Route, Switch, Redirect } from "react-router-dom";
 
 import '../assets/css/now-ui-dashboard.css';
 
+import Login from '../login/Login';
+
 
 class Admin extends React.Component {
     state = {
@@ -22,6 +24,8 @@ class Admin extends React.Component {
             backgroundColor={this.state.backgroundColor}
           />
             <div className="main-panel" ref={this.mainPanel}>
+          <Login></Login>
+
             <Switch>
             {routes.map((prop, key) => {
               return (
