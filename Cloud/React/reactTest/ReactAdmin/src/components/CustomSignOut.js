@@ -17,7 +17,11 @@ export class CustomSignOut extends SignOut {
     }
 render() {
         return (
-            <div style={{margin: "auto", zIndex: '10'}}> 
+            <div style={{textAlign:'center'}}>
+              <div style={{display:'inline-block'}}>
+              <span style={{color:'white'}}>Hello, Admin!</span> 
+              </div>
+              <div style={{display:'inline-block', marginLeft:'70px', marginRight: '0px'}}>
                 <UncontrolledDropdown>
                     <DropdownToggle
                       className="btn-round btn-outline-default btn-icon"
@@ -35,6 +39,7 @@ render() {
                       </DropdownItem>
                     </DropdownMenu>
                   </UncontrolledDropdown>
+                  </div>
                 </div>
         )
     }
