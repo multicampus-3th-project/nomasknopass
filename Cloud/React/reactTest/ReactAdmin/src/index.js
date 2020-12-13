@@ -11,7 +11,7 @@ import "bootstrap/dist/css/bootstrap.css";
 
 import './App.css';
 
-const hist = createBrowserHistory();
+const hist = createBrowserHistory();  
 
 ReactDOM.render(
   <Router history={hist}>
