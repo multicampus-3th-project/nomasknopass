@@ -23,7 +23,7 @@ import { Nav } from "reactstrap";
 import PerfectScrollbar from "perfect-scrollbar";
 
 import logo from "../logo-white.svg";
-
+import { CustomSignOut } from '../components/CustomSignOut';
 import '../assets/css/now-ui-dashboard.css';
 
 var ps;
@@ -55,7 +55,6 @@ class Sidebar extends React.Component {
       <div className="sidebar" data-color={this.props.backgroundColor}>
         <div className="logo">
           <a
-            href="https://www.creative-tim.com?ref=nudr-sidebar"
             className="simple-text logo-mini"
             target="_blank"
           >
@@ -64,12 +63,12 @@ class Sidebar extends React.Component {
             </div>
           </a>
           <a
-            href="https://www.creative-tim.com?ref=nudr-sidebar"
             className="simple-text logo-normal"
             target="_blank"
           >
             KF99
           </a>
+          <CustomSignOut/>
         </div>
         <div className="sidebar-wrapper" ref="sidebar">
           <Nav>

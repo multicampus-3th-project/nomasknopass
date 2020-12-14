@@ -4,14 +4,12 @@ import { createBrowserHistory } from "history";
 import { Router, Route, Switch, Redirect } from "react-router-dom";
 
 import AdminLayout from "./layouts/Admin.js";
-
 // css
 import "bootstrap/dist/css/bootstrap.css";
-
-
 import './App.css';
 
-const hist = createBrowserHistory();
+
+const hist = createBrowserHistory();  
 
 ReactDOM.render(
   <Router history={hist}>
