@@ -6,5 +6,5 @@ while True:
         sleep(1)
         pi.set_servo_pulsewidth(25, 1500)
         sleep(1)
-        pi.set_servo_pulsewidth(25, 2400)
+        pi.set_servo_pulsewidth(25, 2000)
         sleep(1)  
