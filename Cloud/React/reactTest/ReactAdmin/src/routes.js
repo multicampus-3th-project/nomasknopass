@@ -26,8 +26,16 @@
 
 import GateDashboard from "./views/GateDashboard";
 import CCTVDashboard from "./views/CCTVDashboard";
+import COVIDDashboard from "./views/COVIDDashboard";
 
 var dashRoutes = [
+  {
+    path: "/covid19",
+    name: "COVID19",
+    icon: "objects_spaceship",
+    component: COVIDDashboard,
+    layout: "/admin",
+  },
   {
     path: "/gatedashboard",
     name: "Gate",
