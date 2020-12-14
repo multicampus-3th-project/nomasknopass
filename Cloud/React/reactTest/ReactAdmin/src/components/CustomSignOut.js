@@ -9,7 +9,6 @@ import {
     DropdownMenu,
     DropdownItem,
   } from "reactstrap";
-
 export class CustomSignOut extends SignOut {
     constructor(props) {
         super(props);
@@ -31,7 +30,8 @@ render() {
                         style={{color:'white', fontSize: "18px"}} />
                     </DropdownToggle>
                     <DropdownMenu>
-                      <DropdownItem>KF99 Admin</DropdownItem>
+                      <DropdownItem disabled>KF99 Admin</DropdownItem>
+                      <DropdownItem divider />
                       <DropdownItem 
                         className="text-danger"
                         onClick={() => super.signOut()}>

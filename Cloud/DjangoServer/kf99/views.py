@@ -3,6 +3,7 @@ from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view
 import numpy as np
 import cv2
+from rest_framework import status
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from . import load
 import boto3
@@ -14,42 +15,82 @@ lambda_client = boto3.client('lambda',
                              aws_access_key_id='AKIA53OSENDN4VXRF6JE',
                              aws_secret_access_key='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'
                              )
+sns_client = boto3.client('sns',
+                          region_name='ap-northeast-2',
+                          aws_access_key_id='AKIA53OSENDNTMPJOQTE',
+                          aws_secret_access_key='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'
+                          )
 
 
 @api_view(['GET', 'POST'])
-def predict_mask(request):
+def predict_mask_gate(request):
     if request.method == 'GET':
-        return HttpResponse("웹페이지 확인용")
+        return HttpResponse("웹페이지 확인용", status=status.HTTP_200_OK)
 
     elif request.method == 'POST':
-        # file = request.FILES['file']
-        filename = str(request.FILES['image'])
-        print(filename)
-        # image_file = request.FILES['file']
-        handle_uploaded_file(request.FILES['image'], filename)
+        try:
+            filename = str(request.FILES['image'])
+            handle_uploaded_file(request.FILES['image'], filename)
+            temperature_result = request.data['temperature']
+        except:
+            return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
 
         mask_result = predict_one(filename)
-        temperature_result = request.data['temperature']
+
+        if mask_result == 4:
+            return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         json_response = {"mask": mask_result,
                          "temperature": temperature_result}
-
         load.LoadConfig.temperature = temperature_result
-
         os.remove(image_dir + filename)
+        return JsonResponse(json_response, status=status.HTTP_200_OK)
 
-        return JsonResponse(json_response)
+
+@api_view(['POST'])
+def predict_mask_cctv(request):
+    if request.method == 'POST':
+        try:
+            filename = str(request.FILES['image'])
+            handle_uploaded_file(request.FILES['image'], filename)
+        except:
+            return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
+    # .....
+    os.remove(image_dir + filename)
+    # .....
 
 
 @api_view(['POST'])
 def insert_ispass(request):
-    global temperature
-    lambda_client.invoke(
-        FunctionName='insert_DB',
-        InvocationType='Event',
-        Payload=json.dumps({"ispass": request.data['ispass'], "temperature": load.LoadConfig.temperature})
-    )
-    return HttpResponse("loadconfig 온도 " + load.LoadConfig.temperature + "로 insert 완료")
+    try:
+        ispass = request.data['ispass']
+    except:
+        return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        lambda_client.invoke(
+            FunctionName='insert_DB',
+            InvocationType='Event',
+            Payload=json.dumps({"ispass": request.data['ispass'], "temperature": load.LoadConfig.temperature})
+        )
+    except:
+        return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    json_response = {"ispass": ispass,
+                     "temperature": load.LoadConfig.temperature}
+    return HttpResponse(json_response, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def notificate_emergency(request):
+    message = {"GCM": "{ \"data\": { \"title\": \"KF99\",\"message\": \"누군가 비정상적으로 게이트에 접근했습니다. \" } }"}
+    try:
+        sns_client.publish(
+            TargetArn='arn:aws:sns:ap-northeast-2:952312817883:endpoint/GCM/kf99_admin/161d6f80-a767-3162-b6d9-53f41cf46c9d',
+            MessageStructure='json',
+            Message=json.dumps(message))
+    except:
+        return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return HttpResponse(status=status.HTTP_200_OK)
 
 
 def handle_uploaded_file(f, filename):
