@@ -18,6 +18,10 @@
     margin: auto;
     max-width: 98%;
 }
+.line-total {
+    margin: auto;
+    max-width: 100%;
+}
 .wj-flexchart {
     border: none;
 }
