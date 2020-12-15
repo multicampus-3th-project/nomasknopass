@@ -22,6 +22,7 @@ Licensed under the MIT license - http://opensource.org/licenses/MIT
 
 Copyright (c) 2015 Daniel Eden
 */
+
 .animated {
   -webkit-animation-duration: 1s;
   animation-duration: 1s;
@@ -1188,7 +1189,8 @@ textarea.form-control {
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 100; }
+  z-index: 100; 
+}
 
 .form-text {
   font-size: 0.8571em; }
@@ -1224,8 +1226,21 @@ select,
 textarea {
   font-family: "Montserrat", "Helvetica Neue", Arial, sans-serif; }
 
+.wj-cell, .wj-max, .wj-min, .wj-form-control {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 300;
+}
+.wj-value {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 400;
+}
+p {
+  font-weight: 400;
+}
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 400; }
+  font-weight: 400;
+  font-family: 'Noto Sans KR', sans-serif;
+ }
 
 a {
   color: #f96332; }
@@ -1636,7 +1651,8 @@ a[data-toggle="collapse"][aria-expanded="true"] .caret,
     position: absolute;
     width: 100%;
     padding-top: 10px;
-    z-index: 1029; }
+    z-index: 1029; 
+  }
   .documentation .navbar.fixed-top {
     left: 0;
     width: initial; }
@@ -1775,7 +1791,8 @@ a[data-toggle="collapse"][aria-expanded="true"] .caret,
     background-position: center center;
     width: 100%;
     height: 100%;
-    z-index: -1; }
+    z-index: -1; 
+  }
   .page-header .content-center {
     position: absolute;
     top: 50%;
@@ -1795,7 +1812,8 @@ a[data-toggle="collapse"][aria-expanded="true"] .caret,
     width: 100%; }
   .page-header .container {
     height: 100%;
-    z-index: 1; }
+    z-index: 1; 
+  }
   .page-header .category,
   .page-header .description {
     color: rgba(255, 255, 255, 0.8); }
@@ -1833,6 +1851,7 @@ a[data-toggle="collapse"][aria-expanded="true"] .caret,
     /* Standard syntax */ }
 
 .dropdown-menu {
+  z-index: 10;
   border: 0;
   box-shadow: 0px 10px 50px 0px rgba(0, 0, 0, 0.2);
   border-radius: 0.125rem;
@@ -1914,7 +1933,7 @@ a[data-toggle="collapse"][aria-expanded="true"] .caret,
     .dropdown-menu .dropdown-item.disabled, .dropdown-menu .dropdown-item:disabled,
     .bootstrap-select .dropdown-menu.inner li a.disabled,
     .bootstrap-select .dropdown-menu.inner li a:disabled {
-      color: rgba(182, 182, 182, 0.6); }
+      color: rgba(0, 0, 0, 0.6); }
       .dropdown-menu .dropdown-item.disabled:hover, .dropdown-menu .dropdown-item.disabled:focus, .dropdown-menu .dropdown-item:disabled:hover, .dropdown-menu .dropdown-item:disabled:focus,
       .bootstrap-select .dropdown-menu.inner li a.disabled:hover,
       .bootstrap-select .dropdown-menu.inner li a.disabled:focus,
@@ -2020,7 +2039,9 @@ a[data-toggle="collapse"][aria-expanded="true"] .caret,
   .navbar .dropdown.show .dropdown-menu {
     opacity: 1;
     filter: alpha(opacity=100);
-    visibility: visible; }
+    visibility: visible; 
+    z-index: 1000;
+  } 
   .dropdown.show .dropdown-menu:not(.inner), .dropdown-menu.bootstrap-datetimepicker-widget.bottom.open,
   .navbar .dropdown.show .dropdown-menu {
     -webkit-transform: translate3d(0, 1px, 0) !important;
@@ -2671,14 +2692,15 @@ Created using IcoMoon - icomoon.io
   bottom: 0;
   width: 260px;
   left: 0;
-  z-index: 1030; }
+  /* z-index: 1030;  */
+}
   .sidebar .sidebar-wrapper,
   .off-canvas-sidebar .sidebar-wrapper {
     position: relative;
     height: calc(100vh - 75px);
     overflow: auto;
     width: 260px;
-    z-index: 4;
+    z-index: 1; 
     padding-bottom: 100px; }
     .sidebar .sidebar-wrapper .dropdown .dropdown-backdrop,
     .off-canvas-sidebar .sidebar-wrapper .dropdown .dropdown-backdrop {
@@ -2746,7 +2768,8 @@ Created using IcoMoon - icomoon.io
     .sidebar .nav li.active > a,
     .off-canvas-sidebar .nav li.active > a {
       background-color: #FFFFFF;
-      box-shadow: 0 1px 15px 1px rgba(39, 39, 39, 0.1); }
+      box-shadow: 0 1px 15px 1px rgba(39, 39, 39, 0.1); 
+      }
     .sidebar .nav p,
     .off-canvas-sidebar .nav p {
       margin: 0;
@@ -2768,7 +2791,7 @@ Created using IcoMoon - icomoon.io
   .sidebar .sidebar-background,
   .off-canvas-sidebar .sidebar-background {
     position: absolute;
-    z-index: 1;
+    /* z-index: 1; */
     height: 100%;
     width: 100%;
     display: block;
@@ -2779,7 +2802,7 @@ Created using IcoMoon - icomoon.io
     .sidebar .sidebar-background:after,
     .off-canvas-sidebar .sidebar-background:after {
       position: absolute;
-      z-index: 3;
+      /* z-index: 3; */
       width: 100%;
       height: 100%;
       content: "";
@@ -2790,7 +2813,8 @@ Created using IcoMoon - icomoon.io
   .off-canvas-sidebar .logo {
     position: relative;
     padding: 0.5rem 0.7rem;
-    z-index: 4; }
+    z-index: 4; 
+  }
     .sidebar .logo a.logo-mini,
     .off-canvas-sidebar .logo a.logo-mini {
       opacity: 1;
@@ -2868,7 +2892,8 @@ Created using IcoMoon - icomoon.io
     background: -o-linear-gradient(#888 0%, #000 80%);
     background: -moz-linear-gradient(#888 0%, #000 80%);
     background: linear-gradient(#888 0%, #000 80%);
-    z-index: 3; }
+    /* z-index: 3;  */
+  }
   .sidebar[data-color="blue"]:after,
   .off-canvas-sidebar[data-color="blue"]:after {
     background: #0f5c94; }
@@ -2932,6 +2957,7 @@ Created using IcoMoon - icomoon.io
   position: relative;
   float: right;
   width: calc(100% - 260px);
+  z-index: 0;
   background-color: #ac2525;
   background-color: #1634c5;
   -webkit-transition: all 0.5s cubic-bezier(0.685, 0.0473, 0.346, 1);
@@ -3282,7 +3308,10 @@ Created using IcoMoon - icomoon.io
     color: #9A9A9A; }
   .card .card-footer {
     background-color: transparent;
-    border: 0; }
+    border: 0;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 300;
+     }
     .card .card-footer .stats i {
       margin-right: 5px;
       position: relative;
@@ -3823,7 +3852,7 @@ Created using IcoMoon - icomoon.io
     width: 260px;
     right: auto;
     left: 0;
-    z-index: 1032;
+    /* z-index: 1032; */
     visibility: visible;
     overflow-y: visible;
     padding: 0;
@@ -4180,7 +4209,7 @@ Created using IcoMoon - icomoon.io
   position: relative;
   top: 0;
   height: 100vh;
-  overflow: hidden; }
+  overflow: hidden;}
   .wrapper.wrapper-full-page {
     min-height: 100vh;
     height: auto; }
@@ -4202,14 +4231,15 @@ Created using IcoMoon - icomoon.io
   bottom: 0;
   width: 260px;
   left: 0;
-  z-index: 1031; }
+  z-index: 1031; 
+}
   .sidebar .sidebar-wrapper,
   .off-canvas-sidebar .sidebar-wrapper {
     position: relative;
     height: calc(100vh - 75px);
     overflow: auto;
     width: 260px;
-    z-index: 4;
+    /* z-index: 4; */
     padding-bottom: 100px; }
     .sidebar .sidebar-wrapper .dropdown .dropdown-backdrop,
     .off-canvas-sidebar .sidebar-wrapper .dropdown .dropdown-backdrop {
@@ -4293,7 +4323,9 @@ Created using IcoMoon - icomoon.io
     .sidebar .nav li.active > a:not([data-toggle="collapse"]),
     .off-canvas-sidebar .nav li.active > a:not([data-toggle="collapse"]) {
       background-color: #FFFFFF;
-      box-shadow: 0 1px 15px 1px rgba(39, 39, 39, 0.1); }
+      box-shadow: 0 1px 15px 1px rgba(39, 39, 39, 0.1);
+      z-index: 500; 
+    }
     .sidebar .nav li.active > a[data-toggle="collapse"],
     .off-canvas-sidebar .nav li.active > a[data-toggle="collapse"] {
       background-color: rgba(255, 255, 255, 0.1);
@@ -4314,7 +4346,8 @@ Created using IcoMoon - icomoon.io
         width: calc(100% - 5px);
         top: 0;
         left: 2px;
-        z-index: 0; }
+        z-index: 0; 
+      }
     .sidebar .nav p,
     .off-canvas-sidebar .nav p {
       margin: 0;
@@ -4359,7 +4392,8 @@ Created using IcoMoon - icomoon.io
   .off-canvas-sidebar .logo {
     position: relative;
     padding: 0.5rem 0.7rem;
-    z-index: 4; }
+    z-index: 4; 
+  }
     .sidebar .logo a.logo-mini,
     .off-canvas-sidebar .logo a.logo-mini {
       opacity: 1;
@@ -4437,7 +4471,8 @@ Created using IcoMoon - icomoon.io
     background: -o-linear-gradient(#888 0%, #000 80%);
     background: -moz-linear-gradient(#888 0%, #000 80%);
     background: linear-gradient(#888 0%, #000 80%);
-    z-index: 3; }
+    /* z-index: 3;  */
+  }
   .sidebar[data-color="blue"]:after,
   .off-canvas-sidebar[data-color="blue"]:after {  
     background: #6A7CA2; }
@@ -4701,3 +4736,4 @@ Created using IcoMoon - icomoon.io
     --amplify-primary-tint: #7d8fb6;
     --amplify-primary-shade: #55627e;
   }
+

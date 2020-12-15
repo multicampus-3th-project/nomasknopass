@@ -198,7 +198,7 @@ const TransactionList = ({ transactions }) => {
             <Row>
             <Col xs={12} md={4}>
               <Card className="card-chart">
-                <CardHeader>
+                <CardHeader>  
                   <h5 className="card-category">Gate Total</h5>
                   <CardTitle tag="h4">총 방문자 수</CardTitle>
                   <UncontrolledDropdown>
