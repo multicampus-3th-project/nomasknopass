@@ -153,6 +153,7 @@ def human_state_check():
             print("human returned")
             res = requests.post('http://3.35.178.102/ispass/',data={"ispass":0})
             hmn_state = 3
+            mask_state = -1
         else:
             pass
         past_hmn_dist = prnt_hmn_dist
@@ -175,12 +176,12 @@ def control_door(): #받은 신호와 사람 위치에 따라서 문을 열고 �
                 door_state = 1
                 is_judged = 1
                 print("you can pass")
-                play(AudioSegment.from_mp3("./sound/passed.mp3"))
+                # play(AudioSegment.from_mp3("./sound/passed.mp3"))
             elif(door_state == 1) and((hmn_state == 2)or(hmn_state == 3)) and (is_judged == 1): # door_state = 1 이고, 사람이 떠났을 경우 door_state  = 0
                 door_state = 0
                 is_judged = 0
                 print("door closed")
-                play(AudioSegment.from_mp3("./sound/closed.mp3"))
+                # play(AudioSegment.from_mp3("./sound/closed.mp3"))
             elif (door_state == 0) and (hmn_state == 2) and mask_state != 0 and (wrongman == 0) and (is_judged == 0):
                 print("wrong man passed")
                 wrongman = 1
