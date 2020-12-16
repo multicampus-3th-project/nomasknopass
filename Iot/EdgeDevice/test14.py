@@ -12,4 +12,4 @@ while True:
     adc = analog_read(0)
     voltage = adc*3.3/1023
     print("ADC = %s(%d) Voltage = %.3fV" % (hex(adc), adc, voltage))
-    time.sleep(0.1)
+    time.sleep(0.25)
