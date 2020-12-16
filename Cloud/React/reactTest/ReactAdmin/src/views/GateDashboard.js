@@ -8,6 +8,7 @@ import { FlexChart, FlexPie, FlexChartSeries } from 'wijmo/wijmo.react.chart';
 import { RadialGauge } from 'wijmo/wijmo.react.gauge';
 import { CollectionView } from "wijmo/wijmo";
 import { CollectionViewNavigator } from "wijmo/wijmo.react.input";
+import * as wjChartAnimate from 'wijmo/wijmo.react.chart.animation';
 
 // Data imports
 import { recentSales, salesByCountry, salesByPerson } from '../data/data';
@@ -79,6 +80,7 @@ const Gauge = ({ data }) => {
           step={50} isReadOnly={true}
           thickness={0.15}
           value={data}
+          isAnimated={true}
         />
       </div>
     // </ChartPanel>
@@ -94,6 +96,7 @@ const SalesChart = ({ salesData }) => {
         style={{ height: "250px" }}
         palette={['rgba(169,49,222, 1)']}>
         <FlexChartSeries name="count" binding="count" />
+        <wjChartAnimate.FlexChartAnimation></wjChartAnimate.FlexChartAnimation>
       </FlexChart>
       </div>
     // </ChartPanel>
@@ -109,7 +112,11 @@ const SalesPie = ({ salesData }) => {
         bindingName="time"
         innerRadius={0.70}
         style={{ height: "250px" }} 
-                palette={['rgba(255,91,82, 1)', 'rgba(82,146,255, 1)', 'rgba(255,203,83, 1)', 'rgba(47,219,159, 1)']} />
+                palette={['rgba(255,91,82, 1)', 'rgba(82,146,255, 1)', 'rgba(255,203,83, 1)', 'rgba(47,219,159, 1)']} >
+        <wjChartAnimate.FlexChartAnimation animationMode="All" easing="Swing"></wjChartAnimate.FlexChartAnimation>
+
+        </FlexPie>
+
     </div>
     // </ChartPanel>
   );

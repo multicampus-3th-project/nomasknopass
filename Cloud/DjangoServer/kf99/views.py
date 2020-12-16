@@ -12,13 +12,13 @@ import os
 image_dir = '/home/ubuntu/kf99_images/'
 lambda_client = boto3.client('lambda',
                              region_name='ap-northeast-2',
-                             aws_access_key_id='AKIA53OSENDN4VXRF6JE',
-                             aws_secret_access_key='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'
+                             aws_access_key_id='',
+                             aws_secret_access_key=''
                              )
 sns_client = boto3.client('sns',
                           region_name='ap-northeast-2',
-                          aws_access_key_id='AKIA53OSENDNTMPJOQTE',
-                          aws_secret_access_key='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'
+                          aws_access_key_id='',
+                          aws_secret_access_key=''
                           )
 
 
