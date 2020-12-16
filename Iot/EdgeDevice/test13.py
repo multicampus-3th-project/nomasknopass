@@ -4,8 +4,8 @@ import time
 
 bus = SMBus(1)
 sensor = MLX90614(bus, address=0x5A)
-def measureTemp():
-    while True:
-        time.sleep(2)
-        print("Object Temperature : {0:.2f}".format(sensor.get_object_1()))
+
+while True:
+    time.sleep(2)
+    print("Object Temperature : {0:.2f}".format(sensor.get_object_1()))
 bus.close()
