@@ -8,18 +8,25 @@ from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from . import load
 import boto3
 import os
+from matplotlib import pyplot as plt
+import pymysql
 
 image_dir = '/home/ubuntu/kf99_images/'
 lambda_client = boto3.client('lambda',
                              region_name='ap-northeast-2',
-                             aws_access_key_id='',
-                             aws_secret_access_key=''
+                             aws_access_key_id='AKIA53OSENDNTO5R4FGM',
+                             aws_secret_access_key='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'
                              )
 sns_client = boto3.client('sns',
                           region_name='ap-northeast-2',
-                          aws_access_key_id='',
-                          aws_secret_access_key=''
+                          aws_access_key_id='AKIA53OSENDNQW6BW3ZV',
+                          aws_secret_access_key='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'
                           )
+rds_host = "kf99database.cu3wxbwt4src.ap-northeast-2.rds.amazonaws.com"
+name = "admin"
+password = "qjtwlaktmzm"
+db_name = "kf99"
+conn = pymysql.connect(rds_host, user=name, passwd=password, db=db_name, connect_timeout=5)
 
 
 @api_view(['GET', 'POST'])
@@ -35,15 +42,40 @@ def predict_mask_gate(request):
         except:
             return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
 
-        mask_result = predict_one(filename)
 
-        if mask_result == 4:
+
+        # mask_result = predict_one(filename)
+        # if mask_result == 4:
+        #     return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        #
+        # json_response = {"mask": mask_result,
+        #                  "temperature": temperature_result}
+        # load.LoadConfig.temperature = temperature_result
+        # os.remove(image_dir + filename)
+        # return JsonResponse(json_response, status=status.HTTP_200_OK)
+        #
+
+
+        imageSource = image_dir + filename
+        mask, nomask, incorrectmask = predict_cctv(imageSource)
+
+        if mask == 0 and nomask == 0 and incorrectmask == 0:
             return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        if mask > 0:
+            mask_result = 0
+        else:
+            mask_result = 1
+
+        if nomask > 0:
+            mask_result = 1
+        if incorrectmask > 0:
+            mask_result = 2
 
         json_response = {"mask": mask_result,
                          "temperature": temperature_result}
         load.LoadConfig.temperature = temperature_result
-        os.remove(image_dir + filename)
+        os.remove(imageSource)
         return JsonResponse(json_response, status=status.HTTP_200_OK)
 
 
@@ -55,10 +87,23 @@ def predict_mask_cctv(request):
             handle_uploaded_file(request.FILES['image'], filename)
         except:
             return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
-    # .....
-    os.remove(image_dir + filename)
-    # .....
 
+    imageSource = image_dir + filename
+    mask, nomask, incorrectmask = predict_cctv(imageSource)
+    json_response = {"mask": mask,
+                     "nomask": nomask,
+                     "incorrectmask": incorrectmask}
+    os.remove(image_dir + filename)
+    insert_ismask_cctv(mask, nomask, incorrectmask)
+    return JsonResponse(json_response, status=status.HTTP_200_OK)
+
+
+def insert_ismask_cctv(mask, nomask, incorrectmask):
+    with conn.cursor() as cur:
+        cur.execute("set time_zone=\'Asia/Seoul\'")
+        cur.execute("insert into cctv_state(mask, nomask, incorrectmask) values(" + str(mask) + "," + str(nomask) + "," + str(incorrectmask) + ")")
+        conn.commit()
+        cur.close()
 
 @api_view(['POST'])
 def insert_ispass(request):
@@ -85,7 +130,8 @@ def notificate_emergency(request):
     message = {"GCM": "{ \"data\": { \"title\": \"KF99\",\"message\": \"누군가 비정상적으로 게이트에 접근했습니다. \" } }"}
     try:
         sns_client.publish(
-            TargetArn='arn:aws:sns:ap-northeast-2:952312817883:endpoint/GCM/kf99_admin/161d6f80-a767-3162-b6d9-53f41cf46c9d',
+            # TargetArn='arn:aws:sns:ap-northeast-2:952312817883:endpoint/GCM/kf99_admin/161d6f80-a767-3162-b6d9-53f41cf46c9d',
+            TargetArn='arn:aws:sns:ap-northeast-2:952312817883:endpoint/GCM/kf99_admin/07c925ad-eb2f-31b0-90d6-23af17158f01',
             MessageStructure='json',
             Message=json.dumps(message))
     except:
@@ -106,7 +152,11 @@ def make_crop_img(image_file, detector):
         print('No information')
         return []
     else:
-        bounding_box = result[0]['box']
+        wh = []
+        for t, k in enumerate(result):
+            wh.append([k['box'][2] * k['box'][3], t])
+        max_i = max(wh)[1]
+        bounding_box = result[max_i]['box']
 
         for a in range(4):
             if bounding_box[a] < 0:
@@ -160,34 +210,69 @@ def predict_one(filename):
         return 4
 
 
-# 폴더내에 있는 여러장
-def predict_many():
-    path = glob.glob('/home/lab07/testset/test/*.jpg')
+def predict_cctv(chunk):
+    cap = chunk
+    font = cv2.FONT_HERSHEY_PLAIN
+    img = cv2.imread(cap)
+    height, width, _ = img.shape
 
-    for t, i in enumerate(path):
-        try:
-            images = cv2.cvtColor(cv2.imread(i), cv2.COLOR_BGR2RGB)
-            image, message = make_crop_img(images, load.LoadConfig.detector)
-            face_input = cv2.resize(image, dsize=(224, 224))
-            face_input = preprocess_input(face_input)
-            face_input = np.expand_dims(face_input, axis=0)
-            mask1 = load.LoadConfig.model.predict(face_input)
-            result = np.argmax(mask1)
+    blob = cv2.dnn.blobFromImage(img, 1 / 255, (416, 416), (0, 0, 0), swapRB=True, crop=False)
+    load.LoadConfig.net.setInput(blob)
+    output_layers_names = load.LoadConfig.net.getUnconnectedOutLayersNames()
+    layerOutputs = load.LoadConfig.net.forward(output_layers_names)
 
-            if result == 0:
-                print(0)
+    boxes = []
+    confidences = []
+    class_ids = []
 
-            elif result == 1:
-                if message == 'not_detected_nose':
-                    print(0)
-                else:
-                    print(1)
+    for output in layerOutputs:
+        for detection in output:
+            scores = detection[5:]
+            class_id = np.argmax(scores)
+            confidence = scores[class_id]
 
+            if confidence > 0:
+                center_x = int(detection[0] * width)
+                center_y = int(detection[1] * height)
+                w = int(detection[2] * width)
+                h = int(detection[3] * height)
+
+                x = int(center_x - w / 2)
+                y = int(center_y - h / 2)
+
+                boxes.append([x, y, w, h])
+                confidences.append((float(confidence)))
+                class_ids.append(class_id)
+
+    indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.45, 0.4)
+
+    return_label = ''
+
+    mask_c = 0
+    no_mask_c = 0
+    inc_mask_c = 0
+
+    if len(indexes) > 0:
+        for i in indexes.flatten():
+            x, y, w, h = boxes[i]
+            label = str(load.LoadConfig.classes[class_ids[i]])
+            if label == 'MASK':
+                color = (0, 0, 0)
+                mask_c += 1
+            elif label == 'NMASK':
+                color = (0, 0, 255)
+                no_mask_c += 1
             else:
-                if message == 'not_detected_nose':
-                    print(0)
-                else:
-                    print(2)
+                color = (255, 0, 0)
+                inc_mask_c += 1
 
-        except:
-            print(4)
+            confidence = str(round(confidences[i], 2))
+            cv2.rectangle(img, (x, y), (x + w, y + h), color, 3)
+            cv2.putText(img, label + ':' + confidence, (x, y), font, 5, color, 5)
+            return_label += label
+            print(confidence)
+
+    img2 = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    plt.imshow(img2)
+
+    return mask_c, no_mask_c, inc_mask_c
