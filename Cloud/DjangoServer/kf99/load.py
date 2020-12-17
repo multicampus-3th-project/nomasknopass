@@ -11,6 +11,13 @@ class LoadConfig(AppConfig):
     detector = MTCNN()
     temperature = 0
 
-    def ready(self):
-        pass
+    net = cv2.dnn.readNet('/home/lab07/darknet/backup/yolov4_custom_last.weights',
+                          '/home/lab07/darknet/custom/yolov4_custom.cfg')
+    # 파일 주소 확인
+    classes = []
+    with open("/home/lab07/darknet/custom/custom.name", "r") as f:
+        # 파일 주소 확인
+        classes = f.read().splitlines()
+
+
 

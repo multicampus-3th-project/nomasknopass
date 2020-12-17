@@ -1,11 +1,10 @@
 import NavBar from '../components/NavBar';
 import Sidebar from "../components/Sidebar";
-import routes from "../routes.js";
+import routes from "../routes.jsx";
 import React from "react";
 import { Route, Switch, Redirect } from "react-router-dom";
 
 import '../assets/css/now-ui-dashboard.css';
-
 
 import Login from '../login/Login';
 import { CustomSignOut } from '../components/CustomSignOut';
@@ -23,6 +22,10 @@ class Admin extends React.Component {
     backgroundColor: "blue",
   };
   mainPanel = React.createRef();
+
+  componentWillMount() {
+    console.log('aaaaaaaaaaa'+this.props);
+  }
 
   render() {
     return (

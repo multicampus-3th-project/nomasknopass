@@ -12,5 +12,8 @@ export default {
     userPoolId: "ap-northeast-2_LQAY4mmJr",
     userPoolWebClientId: "577ilnfd7fou4bae9b0cpgpcgj"
   }
+  // API: {
+
+  // }
 }
   
