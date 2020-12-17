@@ -4,17 +4,12 @@ def analog_read(channel):
     r = spi.xfer2([1, (0x08+channel)<<4, 0])
     adc_out = ((r[1]&0x03)<<8) + r[2] # 수신 데이터 결합
     return adc_out
-
 spi = spidev.SpiDev()
 spi.open(0,0) # (버스, 디바이스)
 spi.mode = 3
 spi.max_speed_hz = 1000000
-present = 0
-past = 0
 while True:
     adc = analog_read(0)
     voltage = adc*3.3/1023
-    present = voltage
-    time.sleep(0.5)
-    print("past Voltage = %.4fV, present Voltage = %.4fV" % (present, past))
-    past = present
+    print("ADC = %s(%d) Voltage = %.3fV" % (hex(adc), adc, voltage))
+    time.sleep(0.25)

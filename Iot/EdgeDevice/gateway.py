@@ -9,12 +9,12 @@ import pigpio
 import cv2
 import requests
 import os
-from datetime import datetime
 from pydub.playback import play
 import spidev
 from smbus2 import SMBus
 from mlx90614 import MLX90614
-import time
+from pydub import AudioSegment
+from pydub.playback import play
 
 ####### 센서값 핀 할당 #####
 button = Button(21)
@@ -26,9 +26,10 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
 ####### 서보모터 동작 (pigpio) ########
 pi = pigpio.pi()
 
-CHECK_ZONE = 0.4 #voltage 기준
-PASS_ZONE = 1.9
-
+READY_ZONE = 0.2
+CHECK_ZONE  = 0.4 #voltage 기준
+PASS_ZONE   = 0.9
+RETURN_ZONE = 0.2
 
 spi = spidev.SpiDev()
 spi.open(0,0) # (버스, 디바이스)
@@ -49,7 +50,6 @@ def showtouser(): #이용자에게 화면 보여주면서 사진도 찍는 함�
     while True:
         retval, frame = cap.read()
         cv2.imshow('frame', frame)
-        # if human_distance < CHECK_ZONE and human_distance > PASS_ZONE: # 사람이 검사존에 있을 경우임
         ### 2초 간격으로 이미지 파일을 저장 ###
         prnt_time = time.time()
         if (prnt_time - past_time>2) and hmn_state == 1:
@@ -79,39 +79,37 @@ def mask_check(): #클라우드에서 신호를 받아서 처리하는 곳..
         limgsaved = imgsaved
         prnt_time = time.time()
         lhmn_temp = 36.5
-        if prnt_time-past_time > 0.5 and (lf_path != None) and (limgsaved == 1) and lhmn_temp > 30: #간격을 1로 둠
+        if prnt_time-past_time > 0.5 and (lf_path != None) and (limgsaved == 1) and (lhmn_temp>30): #간격을 1로 둠
             try:
                 imgfile = open(lf_path, 'rb')
                 # res = requests.post("http://3.35.178.102/mask/", files = {'file':imgfile})
-                res = requests.post('http://3.35.178.102/predictmask/', files={'image':imgfile}, data={"temperature":lhmn_temp}) #이거슨 그.. 온도도 보낼 때
+                res = requests.post('http://3.35.178.102/gateprediction/', files={'image':imgfile}, data={"temperature":lhmn_temp}) #이거슨 그.. 온도도 보낼 때
                 #print(lhmn_temp)
                 imgfile.close()
-                print("posted")
+                # print("posted")
                 #여기서 f_path 값에 접근해서 파일 삭제
                 try:
                     os.remove(lf_path)
-                    # print("deleted")
                 except FileNotFoundError:
                     print("delete error occured! filenotError but continue")
                     pass
-                try:
+                if res.status_code == 200:
                     mask_state = res.json()['mask']
-                except:
-                    print("OrdinaryJSONDecodeError")
-                    pass
+                else:
+                    print("모델 판단실패, 수신 코드",res.status_code)
             except FileNotFoundError:
                 print("open error occured! filenotError but continue")
             #     pass
-            # if   mask_state == 0:# 0 쓴거
-            #     print("yesMasked")
-            # elif mask_state == 1:# 1 안쓴거
-            #     print("noMasked")
-            # elif mask_state == 2:# 2 잘못쓴거
-            #     print("wrongMasked")
-            # elif mask_state == 4:# 4 감지 못한거
-            #     print("maskNotFound")
-            # else:
-            #     pass
+            if   mask_state == 0:# 0 쓴거
+                print("yesMasked", mask_state)
+            elif mask_state == 1:# 1 안쓴거
+                print("noMasked",mask_state)
+            elif mask_state == 2:# 2 잘못쓴거
+                print("wrongMasked", mask_state)
+            elif mask_state == 4:# 4 감지 못한거
+                print("maskNotFound", mask_state)
+            else:
+                pass
             lf_path = None
             imgsaved = 0
             past_time = prnt_time
@@ -126,25 +124,36 @@ def human_state_check():
     print("begin human_state_check")
     global hmn_state
     global hmn_dist
+    global wrongman
+    global mask_state
     prnt_hmn_dist = 0
     past_hmn_dist = 0
     while True:
         adc = analog_read(0)
         prnt_hmn_dist = adc*3.3/1023 #voltage type
         # print("Voltage = %.4fV" % (voltage))
-        time.sleep(0.75)
+        if hmn_state == 1:
+            time.sleep(0.05)
+        else:
+            time.sleep(0.15)
         # print("past:{0:.3f}, prsnt:{1:.3f}".format(past_hmn_dist,prnt_hmn_dist))
-        if past_hmn_dist < CHECK_ZONE and prnt_hmn_dist > CHECK_ZONE and prnt_hmn_dist < PASS_ZONE:
+        if past_hmn_dist < READY_ZONE and prnt_hmn_dist > READY_ZONE and prnt_hmn_dist < CHECK_ZONE:
+            print("ready set")
+            hmn_state = 5
+        if past_hmn_dist < CHECK_ZONE and prnt_hmn_dist > CHECK_ZONE and prnt_hmn_dist < PASS_ZONE and hmn_state == 5:
             print("human approached")
+            wrongman = 0
             hmn_state =  1
+            mask_state = -1
         elif past_hmn_dist < PASS_ZONE and prnt_hmn_dist > PASS_ZONE and hmn_state == 1:
             print("human passed")
             res = requests.post('http://3.35.178.102/ispass/',data={"ispass":1})
             hmn_state = 2
-        elif past_hmn_dist > CHECK_ZONE and prnt_hmn_dist < CHECK_ZONE and past_hmn_dist < PASS_ZONE and hmn_state == 1:
+        elif past_hmn_dist > RETURN_ZONE and prnt_hmn_dist < RETURN_ZONE and past_hmn_dist < PASS_ZONE and hmn_state == 1:
             print("human returned")
             res = requests.post('http://3.35.178.102/ispass/',data={"ispass":0})
             hmn_state = 3
+            mask_state = -1
         else:
             pass
         past_hmn_dist = prnt_hmn_dist
@@ -154,40 +163,47 @@ def human_state_check():
 def control_door(): #받은 신호와 사람 위치에 따라서 문을 열고 닫는 곳+사람에게 안내하는 곳..
     print("begin control_door")
     global hmn_state
-    global door_state
+    global mask_state
     past_noticed = time.time()
+    door_state = 0
+    pst_door_state = 0
     is_judged = 0
+    global wrongman
     while True:
         prnt_noticed = time.time()
         if (prnt_noticed-past_noticed)>0.5: #0.5초간격 실행슨
-            if (hmn_state == 1) and (mask_state == 0) and (is_judged == 0): # 사람이 포토존에 있고, 마스크를 썼을 경우 door_state = 1
+            if (door_state == 0) and (hmn_state == 1) and (mask_state == 0) and (is_judged == 0): # 사람이 포토존에 있고, 마스크를 썼을 경우 door_state = 1
                 door_state = 1
                 is_judged = 1
                 print("you can pass")
-                #play("./sound/passed.mp3")
+                # play(AudioSegment.from_mp3("./sound/passed.mp3"))
             elif(door_state == 1) and((hmn_state == 2)or(hmn_state == 3)) and (is_judged == 1): # door_state = 1 이고, 사람이 떠났을 경우 door_state  = 0
                 door_state = 0
                 is_judged = 0
                 print("door closed")
-                #play("./sound/closed.mp3")
-            elif (door_state == 1) and (hmn_state == 1) and ((mask_state == 2) or (mask_state == 1)) and (is_judged == 0):#사람이 포토존에 있고, 마스크를 잘못 썼을 경우(/이미 문이 열린 경우)
-                print("wrong masked")
-                #play("./sound/wrong.mp3")
-            elif (door_state == 0) and (hmn_state == 1) and (mask_state == 2): #사람이 포토존에 있고, 마스크를 잘못 썼을 경우 (/문이 열리지 않은 경우)
-                print("wrong masked")
-                #play("./sound/wrongclosed.mp3")
-            elif (door_state == 0) and (hmn_state == 1) and (mask_state == 3): #사람이 포토존에 있고, 마스크를 안 썼을 경우
-                print("return")
-                #play("./sound/nomask.mp3")
+                # play(AudioSegment.from_mp3("./sound/closed.mp3"))
+            elif (door_state == 0) and (hmn_state == 2) and mask_state != 0 and (wrongman == 0) and (is_judged == 0):
+                print("wrong man passed")
+                wrongman = 1
+                res = requests.get('http://3.35.178.102/emergency/')
+            else:
+                # print(door_state, hmn_state, mask_state, wrongman, is_judged)
+                pass
+            
+            if (pst_door_state == 0) and (door_state == 1):
+                print("door open")
+                for step in range (100):
+                    pi.set_servo_pulsewidth(25, 1400-8*step)
+                    time.sleep(0.01)
+                pst_door_state = door_state
+            elif(pst_door_state == 1) and (door_state == 0): #door_state == 0
+                for step in range (100):
+                    pi.set_servo_pulsewidth(25, 600+8*step)
+                    time.sleep(0.01)
+                pst_door_state = door_state
             else:
                 pass
-            if (door_state == 1):
-                pi.set_servo_pulsewidth(25, 600)
-            elif(door_state == 0): #door_state == 0
-                pi.set_servo_pulsewidth(25, 2000)
-            else:
-                pass
-            past_noticed = prnt_noticed 
+            past_noticed = prnt_noticed
 
 def measureTemp():
     global hmn_temp
@@ -201,29 +217,38 @@ def measureTemp():
             hmn_temp = 0
         #print(lhmn_temp)
 
+def pushtoAdmin():
+    while True:
+        button.wait_for_press()
+        print("The button was pressed!")
+
+
 global hmn_dist
 global hmn_state
-global door_state
 global f_path
 global mask_state
 global imgsaved
 global hmn_temp
+global wrongman
 
 hmn_dist = 0
 hmn_state  = 1 
-door_state = 0
 f_path = None
 mask_state = -1
 imgsaved = 0
 hmn_temp = 0
+wrongman = -1
+pi.set_servo_pulsewidth(25, 1400)
 
 proc1 = Thread(target=human_state_check, args=())
-proc2 = Thread(target=measureTemp, args=())
+# proc2 = Thread(target=measureTemp, args=())
 proc3 = Thread(target=control_door, args=())
 proc4 = Thread(target=mask_check, args=())
 proc5 = Thread(target=showtouser, args=())
+proc6 = Thread(target=pushtoAdmin, args=())
 proc1.start()
-proc2.start()
+# proc2.start()
 proc3.start()
 proc4.start()
 proc5.start()
+proc6.start()
