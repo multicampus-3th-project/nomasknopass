@@ -18,8 +18,9 @@ from smbus2 import SMBus
 from mlx90614 import MLX90614
 from pydub import AudioSegment
 from pydub.playback import play
+import csv
 
-# 안녕 나는 플라스크 용 플라스크라고 한다.
+# 플라스크 코딩 시작
 app = Flask(__name__) 
 
 # 이하 미리 셋업을 해서 시간을 버는 방식
@@ -31,10 +32,10 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 pi = pigpio.pi()
 
 #적외선 센서를 이용한 ㅎㅎ
-READY_ZONE = 0.22
-CHECK_ZONE  = 0.38 #voltage 기준
-PASS_ZONE   = 1.0
-RETURN_ZONE = 0.2
+READY_ZONE = 0.35
+CHECK_ZONE  = 0.45 #voltage 기준
+PASS_ZONE   = 1.2
+RETURN_ZONE = 0.22
 
 ##적외선센서를 이용한 거리를 측정해봅시다
 spi = spidev.SpiDev()
@@ -50,7 +51,8 @@ sensor = MLX90614(bus, address=0x5A)
 @app.route('/') 
 def index(): 
    """Video streaming .""" 
-   return render_template('index.html') 
+   return render_template('index.html')
+
 def gen(): 
    """Video streaming generator function."""
    global f_path
@@ -64,7 +66,7 @@ def gen():
         b'Content-Type: image/jpeg\r\n\r\n' + byteArray + b'\r\n')
         ### 2초 간격으로 이미지 파일을 저장 ###
         prnt_time = time.time()
-        if (prnt_time - past_time>2) and hmn_state == 1:
+        if (prnt_time - past_time>1) and hmn_state == 1:
             # fname = datetime.now().strftime("%Y%m%d%H%M%S")
             # f_path = "./image/"+fname+".jpg"
             # cv2.imwrite(f_path,frame)
@@ -77,9 +79,9 @@ def gen():
 def video_feed(): 
    """Video streaming route. Put this in the src attribute of an img tag.""" 
    return Response(gen(), 
-                   mimetype='multipart/x-mixed-replace; boundary=frame') 
+                   mimetype='multipart/x-mixed-replace; boundary=frame')
 
-def mask_check(): #클라우드에서 신호를 받아서 처리하는 곳..
+def mask_check(): #클라우드와 신호 주고 받기.
     print("begin mask_check")
     global f_path
     global mask_state
@@ -91,7 +93,7 @@ def mask_check(): #클라우드에서 신호를 받아서 처리하는 곳..
         limgsaved = imgsaved
         prnt_time = time.time()
         lhmn_temp = 36.5
-        if prnt_time-past_time > 0.5 and (limgsaved == 1) and (lhmn_temp>30): #간격을 1로 둠
+        if prnt_time-past_time > 0.5 and (limgsaved == 1) and (lhmn_temp>30): #간격을 0.5로 둠
             try:
                 # imgfile = open(lf_path, 'rb')
                 imgfile = io.BytesIO(lf_path)
@@ -105,20 +107,21 @@ def mask_check(): #클라우드에서 신호를 받아서 처리하는 곳..
                 if res.status_code == 200:
                     mask_state = res.json()['mask']
                 else:
-                    print("모델 판단실패, 수신 코드",res.status_code)
-            except FileNotFoundError:
+                    print("모델 판단실패, 수신 코드", res.status_code)
+            except:
                 print("open error occured! filenotError but continue")
-            #     pass
             if   mask_state == 0:# 0 쓴거
-                print("yesMasked", mask_state)
+                print("yMasked", mask_state)
             elif mask_state == 1:# 1 안쓴거
-                print("noMasked",mask_state)
+                print("nMasked", mask_state)
             elif mask_state == 2:# 2 잘못쓴거
-                print("wrongMasked", mask_state)
+                print("wMasked", mask_state)
             elif mask_state == 4:# 4 감지 못한거
                 print("maskNotFound", mask_state)
             else:
                 pass
+
+            #초기화하기
             lf_path = None
             imgsaved = 0
             past_time = prnt_time
@@ -137,23 +140,37 @@ def human_state_check():
     global mask_state
     prnt_hmn_dist = 0
     past_hmn_dist = 0
+    voltage = []
+    voltage1 = []
+    newList = []
     while True:
         adc = analog_read(0)
         prnt_hmn_dist = adc*3.3/1023 #voltage type
-        # print("Voltage = %.4fV" % (voltage))
-        if hmn_state == 1:
-            time.sleep(0.05)
-        else:
-            time.sleep(0.15)
-        # print("past:{0:.3f}, prsnt:{1:.3f}".format(past_hmn_dist,prnt_hmn_dist))
-        if past_hmn_dist < READY_ZONE and prnt_hmn_dist > READY_ZONE and prnt_hmn_dist < CHECK_ZONE:
+        voltage.append(prnt_hmn_dist)
+        #print(prnt_hmn_dist)
+        if len(voltage)>9:
+            del voltage[0]
+            newList = [x for x in voltage if(x>0.35 and x<0.51)]
+            if (len(newList)>6) and (hmn_state != 1):
+                print("human approached")
+                wrongman = 0
+                hmn_state =  1
+                mask_state = -1
+            f = open("voltage.csv","w")
+        #if len(voltage1)>200:
+            #writer = csv.writer(f)
+            #writer.writerow(voltage1)
+            #print("```````````````````````````````job done`````````````````````````````````````")
+            #break
+
+        if past_hmn_dist < READY_ZONE and prnt_hmn_dist > READY_ZONE and prnt_hmn_dist < CHECK_ZONE and ((hmn_state == 3) or (hmn_state == 2)) :
             print("ready set")
             hmn_state = 5
-        if past_hmn_dist < CHECK_ZONE and prnt_hmn_dist > CHECK_ZONE and prnt_hmn_dist < PASS_ZONE and hmn_state == 5:
-            print("human approached")
-            wrongman = 0
-            hmn_state =  1
-            mask_state = -1
+        #elif past_hmn_dist < CHECK_ZONE and prnt_hmn_dist > CHECK_ZONE and prnt_hmn_dist < PASS_ZONE and hmn_state == 5:
+            #print("human approached")
+            #wrongman = 0
+            #hmn_state =  1
+            #mask_state = -1
         elif past_hmn_dist < PASS_ZONE and prnt_hmn_dist > PASS_ZONE and hmn_state == 1:
             print("human passed")           
             hmn_state = 2
@@ -165,6 +182,12 @@ def human_state_check():
         else:
             pass
         past_hmn_dist = prnt_hmn_dist
+        if hmn_state == 1:
+            time.sleep(0.10)
+            #print(prnt_hmn_dist)
+        else:
+            time.sleep(0.10)
+            #print(prnt_hmn_dist)
         
 
 # sudo pigpiod
@@ -173,11 +196,11 @@ def control_door(): #받은 신호와 사람 위치에 따라서 문을 열고 �
     global hmn_state
     global mask_state
     global sound_state
+    global wrongman
     past_noticed = time.time()
     door_state = 0
     pst_door_state = 0
     is_judged = 0
-    global wrongman
     while True:
         prnt_noticed = time.time()
         if (prnt_noticed-past_noticed)>0.5: #0.5초간격 실행슨
@@ -204,7 +227,6 @@ def control_door(): #받은 신호와 사람 위치에 따라서 문을 열고 �
                 pass
             
             if (pst_door_state == 0) and (door_state == 1):
-                print("door open")
                 for step in range (100):
                     pi.set_servo_pulsewidth(25, 1400-8*step)
                     time.sleep(0.01)
@@ -267,20 +289,19 @@ imgsaved = 0
 hmn_temp = 0
 wrongman = -1
 sound_state = -1
-
 pi.set_servo_pulsewidth(25, 1400)
 
-
-proc1 = Thread(target=human_state_check, args=())
-# proc2 = Thread(target=measureTemp, args=())
-proc3 = Thread(target=control_door, args=())
-proc4 = Thread(target=mask_check, args=())
-proc6 = Thread(target=pushtoAdmin, args=())
-proc7 = Thread(target=playSound, args=())
-proc1.start()
-# proc2.start()
-proc3.start()
-proc4.start()
-proc6.start()
-proc7.start()
-app.run(host='0.0.0.0', debug=False, threaded=True)
+if __name__ =='__main__':
+    proc1 = Thread(target=human_state_check, args=())
+    # proc2 = Thread(target=measureTemp, args=())
+    proc3 = Thread(target=control_door, args=())
+    proc4 = Thread(target=mask_check, args=())
+    proc6 = Thread(target=pushtoAdmin, args=())
+    proc7 = Thread(target=playSound, args=())
+    proc1.start()
+    # proc2.start()
+    proc3.start()
+    proc4.start()
+    proc6.start()
+    proc7.start()
+    app.run(host='0.0.0.0', debug=False, threaded=True)
