@@ -1,5 +1,4 @@
 from gpiozero import Button, DistanceSensor
-from picamera import PiCamera
 from datetime import datetime
 from signal import pause
 import time
@@ -28,7 +27,7 @@ pi = pigpio.pi()
 
 READY_ZONE = 0.2
 CHECK_ZONE  = 0.4 #voltage 기준
-PASS_ZONE   = 0.9
+PASS_ZONE   = 1.0
 RETURN_ZONE = 0.2
 
 spi = spidev.SpiDev()
@@ -49,6 +48,7 @@ def showtouser(): #이용자에게 화면 보여주면서 사진도 찍는 함�
     past_time = time.time()
     while True:
         retval, frame = cap.read()
+        frame = cv2.flip(frame, 1)
         cv2.imshow('frame', frame)
         ### 2초 간격으로 이미지 파일을 저장 ###
         prnt_time = time.time()
@@ -73,6 +73,7 @@ def mask_check(): #클라우드에서 신호를 받아서 처리하는 곳..
     global mask_state
     global imgsaved
     global hmn_temp
+    global is_judged
     past_time = time.time()
     while True:
         lf_path = f_path
@@ -104,10 +105,13 @@ def mask_check(): #클라우드에서 신호를 받아서 처리하는 곳..
                 print("yesMasked", mask_state)
             elif mask_state == 1:# 1 안쓴거
                 print("noMasked",mask_state)
+                is_judged = 0
             elif mask_state == 2:# 2 잘못쓴거
                 print("wrongMasked", mask_state)
+                is_judged = 0
             elif mask_state == 4:# 4 감지 못한거
                 print("maskNotFound", mask_state)
+                is_judged = 0
             else:
                 pass
             lf_path = None
@@ -126,6 +130,7 @@ def human_state_check():
     global hmn_dist
     global wrongman
     global mask_state
+    
     prnt_hmn_dist = 0
     past_hmn_dist = 0
     while True:
@@ -140,7 +145,7 @@ def human_state_check():
         if past_hmn_dist < READY_ZONE and prnt_hmn_dist > READY_ZONE and prnt_hmn_dist < CHECK_ZONE:
             print("ready set")
             hmn_state = 5
-        if past_hmn_dist < CHECK_ZONE and prnt_hmn_dist > CHECK_ZONE and prnt_hmn_dist < PASS_ZONE and hmn_state == 5:
+        elif past_hmn_dist < CHECK_ZONE and prnt_hmn_dist > CHECK_ZONE and prnt_hmn_dist < PASS_ZONE and hmn_state == 5:
             print("human approached")
             wrongman = 0
             hmn_state =  1
@@ -149,6 +154,7 @@ def human_state_check():
             print("human passed")
             res = requests.post('http://3.35.178.102/ispass/',data={"ispass":1})
             hmn_state = 2
+            mask_state = -1
         elif past_hmn_dist > RETURN_ZONE and prnt_hmn_dist < RETURN_ZONE and past_hmn_dist < PASS_ZONE and hmn_state == 1:
             print("human returned")
             res = requests.post('http://3.35.178.102/ispass/',data={"ispass":0})
@@ -164,6 +170,8 @@ def control_door(): #받은 신호와 사람 위치에 따라서 문을 열고 �
     print("begin control_door")
     global hmn_state
     global mask_state
+    global sound_state
+    global is_judged
     past_noticed = time.time()
     door_state = 0
     pst_door_state = 0
@@ -171,18 +179,26 @@ def control_door(): #받은 신호와 사람 위치에 따라서 문을 열고 �
     global wrongman
     while True:
         prnt_noticed = time.time()
-        if (prnt_noticed-past_noticed)>0.5: #0.5초간격 실행슨
+        if (prnt_noticed-past_noticed)>0.6: #0.5초간격 실행슨
             if (door_state == 0) and (hmn_state == 1) and (mask_state == 0) and (is_judged == 0): # 사람이 포토존에 있고, 마스크를 썼을 경우 door_state = 1
-                door_state = 1
+                # door_state = 1
                 is_judged = 1
-                print("you can pass")
+                # print("you can pass")
                 # play(AudioSegment.from_mp3("./sound/passed.mp3"))
-            elif(door_state == 1) and((hmn_state == 2)or(hmn_state == 3)) and (is_judged == 1): # door_state = 1 이고, 사람이 떠났을 경우 door_state  = 0
+                print("steady")
+            elif (door_state == 0) and (hmn_state == 1) and (mask_state == 0) and (is_judged == 1):
+                is_judged = 2
+                print("steady1")
+            elif (door_state == 0) and (hmn_state == 1) and (mask_state == 0) and (is_judged == 2):
+                is_judged = 3
+                door_state = 1
+                print("you can pass")
+            elif(door_state == 1) and((hmn_state == 2)or(hmn_state == 3)) and ((is_judged == 3) or (is_judged == 2) or (is_judged == 1)): # door_state = 1 이고, 사람이 떠났을 경우 door_state  = 0
                 door_state = 0
                 is_judged = 0
                 print("door closed")
                 # play(AudioSegment.from_mp3("./sound/closed.mp3"))
-            elif (door_state == 0) and (hmn_state == 2) and mask_state != 0 and (wrongman == 0) and (is_judged == 0):
+            elif (door_state == 0) and (hmn_state == 2) and mask_state != 0 and (wrongman == 0) and ((is_judged == 0) or (is_judged == 1)):
                 print("wrong man passed")
                 wrongman = 1
                 res = requests.get('http://3.35.178.102/emergency/')
@@ -230,6 +246,7 @@ global mask_state
 global imgsaved
 global hmn_temp
 global wrongman
+global sound_state
 
 hmn_dist = 0
 hmn_state  = 1 
