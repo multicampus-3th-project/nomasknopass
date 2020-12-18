@@ -1,3 +1,7 @@
+# import required modules
+from flask import Flask, render_template, Response 
+import socket 
+import io
 from gpiozero import Button, DistanceSensor
 from datetime import datetime
 from signal import pause
@@ -15,21 +19,24 @@ from mlx90614 import MLX90614
 from pydub import AudioSegment
 from pydub.playback import play
 
-####### 센서값 핀 할당 #####
-button = Button(21)
+# 안녕 나는 플라스크 용 플라스크라고 한다.
+app = Flask(__name__) 
+
 # 이하 미리 셋업을 해서 시간을 버는 방식
 cap = cv2.VideoCapture(0) # 0번 카메라
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
-####### 센서값 핀 할당 끝 #####
+
 ####### 서보모터 동작 (pigpio) ########
 pi = pigpio.pi()
 
-READY_ZONE = 0.2
-CHECK_ZONE  = 0.4 #voltage 기준
+#적외선 센서를 이용한 ㅎㅎ
+READY_ZONE = 0.22
+CHECK_ZONE  = 0.38 #voltage 기준
 PASS_ZONE   = 1.0
 RETURN_ZONE = 0.2
 
+##적외선센서를 이용한 거리를 측정해봅시다
 spi = spidev.SpiDev()
 spi.open(0,0) # (버스, 디바이스)
 spi.mode = 3
@@ -40,32 +47,38 @@ bus = SMBus(1)
 sensor = MLX90614(bus, address=0x5A)
 
 
-def showtouser(): #이용자에게 화면 보여주면서 사진도 찍는 함수..
-    print("True showtouser")
-    global human_distance
-    global f_path
-    global imgsaved
-    past_time = time.time()
-    while True:
-        retval, frame = cap.read()
+@app.route('/') 
+def index(): 
+   """Video streaming .""" 
+   return render_template('index.html') 
+def gen(): 
+   """Video streaming generator function."""
+   global f_path
+   global imgsaved
+   past_time = time.time()
+   while True: 
+        rval, frame = cap.read()
         frame = cv2.flip(frame, 1)
-        cv2.imshow('frame', frame)
+        byteArray = cv2.imencode('.jpg', frame)[1].tobytes()
+        yield (b'--frame\r\n'
+        b'Content-Type: image/jpeg\r\n\r\n' + byteArray + b'\r\n')
         ### 2초 간격으로 이미지 파일을 저장 ###
         prnt_time = time.time()
         if (prnt_time - past_time>2) and hmn_state == 1:
             fname = datetime.now().strftime("%Y%m%d%H%M%S")
             f_path = "./image/"+fname+".jpg"
             cv2.imwrite(f_path,frame)
+
             # print("saved!")
             imgsaved = 1
             past_time = prnt_time
-            #print("captured!")
-        key = cv2.waitKey(25)
-        if key == 27: break # ESC키를 누른 경우 루프 탈출
-    if cap.isOpened():
-        cap.release()
-    cv2.destroyAllWindows()
-    return 0
+            # print("captured!")
+
+@app.route('/video_feed') 
+def video_feed(): 
+   """Video streaming route. Put this in the src attribute of an img tag.""" 
+   return Response(gen(), 
+                   mimetype='multipart/x-mixed-replace; boundary=frame') 
 
 def mask_check(): #클라우드에서 신호를 받아서 처리하는 곳..
     print("begin mask_check")
@@ -73,7 +86,6 @@ def mask_check(): #클라우드에서 신호를 받아서 처리하는 곳..
     global mask_state
     global imgsaved
     global hmn_temp
-    global is_judged
     past_time = time.time()
     while True:
         lf_path = f_path
@@ -105,13 +117,10 @@ def mask_check(): #클라우드에서 신호를 받아서 처리하는 곳..
                 print("yesMasked", mask_state)
             elif mask_state == 1:# 1 안쓴거
                 print("noMasked",mask_state)
-                is_judged = 0
             elif mask_state == 2:# 2 잘못쓴거
                 print("wrongMasked", mask_state)
-                is_judged = 0
             elif mask_state == 4:# 4 감지 못한거
                 print("maskNotFound", mask_state)
-                is_judged = 0
             else:
                 pass
             lf_path = None
@@ -130,7 +139,6 @@ def human_state_check():
     global hmn_dist
     global wrongman
     global mask_state
-    
     prnt_hmn_dist = 0
     past_hmn_dist = 0
     while True:
@@ -145,21 +153,19 @@ def human_state_check():
         if past_hmn_dist < READY_ZONE and prnt_hmn_dist > READY_ZONE and prnt_hmn_dist < CHECK_ZONE:
             print("ready set")
             hmn_state = 5
-        elif past_hmn_dist < CHECK_ZONE and prnt_hmn_dist > CHECK_ZONE and prnt_hmn_dist < PASS_ZONE and hmn_state == 5:
+        if past_hmn_dist < CHECK_ZONE and prnt_hmn_dist > CHECK_ZONE and prnt_hmn_dist < PASS_ZONE and hmn_state == 5:
             print("human approached")
             wrongman = 0
             hmn_state =  1
             mask_state = -1
         elif past_hmn_dist < PASS_ZONE and prnt_hmn_dist > PASS_ZONE and hmn_state == 1:
-            print("human passed")
-            res = requests.post('http://3.35.178.102/ispass/',data={"ispass":1})
+            print("human passed")           
             hmn_state = 2
-            mask_state = -1
         elif past_hmn_dist > RETURN_ZONE and prnt_hmn_dist < RETURN_ZONE and past_hmn_dist < PASS_ZONE and hmn_state == 1:
             print("human returned")
-            res = requests.post('http://3.35.178.102/ispass/',data={"ispass":0})
             hmn_state = 3
             mask_state = -1
+            res = requests.post('http://3.35.178.102/visit/',data={"ispass":0})
         else:
             pass
         past_hmn_dist = prnt_hmn_dist
@@ -171,7 +177,6 @@ def control_door(): #받은 신호와 사람 위치에 따라서 문을 열고 �
     global hmn_state
     global mask_state
     global sound_state
-    global is_judged
     past_noticed = time.time()
     door_state = 0
     pst_door_state = 0
@@ -179,31 +184,27 @@ def control_door(): #받은 신호와 사람 위치에 따라서 문을 열고 �
     global wrongman
     while True:
         prnt_noticed = time.time()
-        if (prnt_noticed-past_noticed)>0.6: #0.5초간격 실행슨
+        if (prnt_noticed-past_noticed)>0.5: #0.5초간격 실행슨
             if (door_state == 0) and (hmn_state == 1) and (mask_state == 0) and (is_judged == 0): # 사람이 포토존에 있고, 마스크를 썼을 경우 door_state = 1
-                # door_state = 1
-                is_judged = 1
-                # print("you can pass")
-                # play(AudioSegment.from_mp3("./sound/passed.mp3"))
-                print("steady")
-            elif (door_state == 0) and (hmn_state == 1) and (mask_state == 0) and (is_judged == 1):
-                is_judged = 2
-                print("steady1")
-            elif (door_state == 0) and (hmn_state == 1) and (mask_state == 0) and (is_judged == 2):
-                is_judged = 3
                 door_state = 1
+                is_judged = 1
+                sound_state = 1
                 print("you can pass")
-            elif(door_state == 1) and((hmn_state == 2)or(hmn_state == 3)) and ((is_judged == 3) or (is_judged == 2) or (is_judged == 1)): # door_state = 1 이고, 사람이 떠났을 경우 door_state  = 0
+            elif(door_state == 1) and (hmn_state == 2) and (is_judged == 1): # 멀쩡한 사람이 통과를 했을 경우 door_state  = 0
+                door_state = 0
+                is_judged = 0
+                res = requests.post('http://3.35.178.102/visit/',data={"ispass":1})
+                sound_state = 2
+                print("door closed")
+            elif (door_state == 1) and (hmn_state == 3) and (is_judged == 1): # 멀쩡한 사람이 떠났을 경우 door_state  = 0
                 door_state = 0
                 is_judged = 0
                 print("door closed")
-                # play(AudioSegment.from_mp3("./sound/closed.mp3"))
-            elif (door_state == 0) and (hmn_state == 2) and mask_state != 0 and (wrongman == 0) and ((is_judged == 0) or (is_judged == 1)):
+            elif (door_state == 0) and (hmn_state == 2) and mask_state != 0 and (wrongman == 0) and (is_judged == 0):
                 print("wrong man passed")
                 wrongman = 1
                 res = requests.get('http://3.35.178.102/emergency/')
             else:
-                # print(door_state, hmn_state, mask_state, wrongman, is_judged)
                 pass
             
             if (pst_door_state == 0) and (door_state == 1):
@@ -238,6 +239,19 @@ def pushtoAdmin():
         button.wait_for_press()
         print("The button was pressed!")
 
+def playSound():
+    global sound_state
+    while True:
+        time.sleep(0.2)
+        if(sound_state == 1):
+            play(AudioSegment.from_mp3("./sound/passed.mp3"))
+        elif(sound_state == 2):
+            play(AudioSegment.from_mp3("./sound/closed.mp3"))
+        else:
+            pass
+        sound_state = 0
+        
+
 
 global hmn_dist
 global hmn_state
@@ -248,6 +262,7 @@ global hmn_temp
 global wrongman
 global sound_state
 
+
 hmn_dist = 0
 hmn_state  = 1 
 f_path = None
@@ -255,17 +270,21 @@ mask_state = -1
 imgsaved = 0
 hmn_temp = 0
 wrongman = -1
+sound_state = -1
+
 pi.set_servo_pulsewidth(25, 1400)
+
 
 proc1 = Thread(target=human_state_check, args=())
 # proc2 = Thread(target=measureTemp, args=())
 proc3 = Thread(target=control_door, args=())
 proc4 = Thread(target=mask_check, args=())
-proc5 = Thread(target=showtouser, args=())
 proc6 = Thread(target=pushtoAdmin, args=())
+proc7 = Thread(target=playSound, args=())
 proc1.start()
 # proc2.start()
 proc3.start()
 proc4.start()
-proc5.start()
 proc6.start()
+proc7.start()
+app.run(host='0.0.0.0', debug=False, threaded=True)
