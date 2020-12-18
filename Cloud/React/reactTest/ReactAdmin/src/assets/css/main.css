@@ -25,17 +25,79 @@
 .wj-flexchart {
     border: none;
 }
+.wj-flexgrid {
+    border: none;
+}
 .page {
     width: 100%;
     text-align: center;
 }
-.wj-cells .wj-cell.wj-state-selected {
-    background: #9a90d3;
-}
 .wj-cells .wj-cell.wj-state-multi-selected {
-    background: #b8b0e2;
+    background: rgb(215, 219, 215);
+    color: #000000;
 }
 .wj-gauge .wj-pointer, .wj-gauge .wj-needle {
     fill: #538DE6;
 }
+.wj-flexgrid .wj-cell {
+    transition: background .4s;
+    border-right: none;
+    text-align: center;
+    padding: 8px 3px;
+}
+.wj-flexgrid .wj-marquee,
+.wj-flexgrid .wj-header {
+    transition: all .4s;
+}
+.wj-cell.wj-alt {
+    background: #ffffff;
+}
 
+.wj-series-group rect:hover {
+    stroke-width: 4px;
+    stroke: rgb(185, 185, 185);
+  }
+  
+  .wj-series-group ellipse:hover {
+    stroke-width: 4px;
+    stroke: aqua
+  }
+
+  .wj-gauge .wj-face path {
+      stroke: none;
+  }
+path:hover {
+    stroke-width: 4px;
+    stroke-opacity: 0.7;
+    stroke: rgb(185, 185, 185);
+}
+.wj-flexgrid {
+    /* min-height: 250px; */
+    margin-bottom: 24px;
+}
+.transaction .wj-cells .wj-cell:not(.wj-state-selected):not(.wj-state-multi-selected):hover {
+    background-color:rgb(215, 219, 215);
+    transition: all 0.5s;
+  }
+
+.wj-cell.wj-header {
+    /* padding: 8px; */
+    /* border-style: dashed; */
+    background: #ffffff;
+    border-collapse: collapse;
+    text-align: center;
+}
+.wj-cell.wj-header.wj-state-multi-selected {
+    background: #ffffff;
+}
+.wj-content.wj-pager {
+    border: none;
+}
+.wj-marquee {
+    opacity: 0.2;
+    border: 2px solid #b8b0e2;
+}
+.report-one {
+    max-width: 90%;
+    margin: auto;
+}
