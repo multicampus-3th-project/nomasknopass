@@ -24,8 +24,8 @@ app = Flask(__name__)
 
 # 이하 미리 셋업을 해서 시간을 버는 방식
 cap = cv2.VideoCapture(0) # 0번 카메라
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 ####### 서보모터 동작 (pigpio) ########
 pi = pigpio.pi()
@@ -65,11 +65,10 @@ def gen():
         ### 2초 간격으로 이미지 파일을 저장 ###
         prnt_time = time.time()
         if (prnt_time - past_time>2) and hmn_state == 1:
-            fname = datetime.now().strftime("%Y%m%d%H%M%S")
-            f_path = "./image/"+fname+".jpg"
-            cv2.imwrite(f_path,frame)
-
-            # print("saved!")
+            # fname = datetime.now().strftime("%Y%m%d%H%M%S")
+            # f_path = "./image/"+fname+".jpg"
+            # cv2.imwrite(f_path,frame)
+            is_success, f_path = cv2.imencode(".jpg", frame)
             imgsaved = 1
             past_time = prnt_time
             # print("captured!")
@@ -92,20 +91,17 @@ def mask_check(): #클라우드에서 신호를 받아서 처리하는 곳..
         limgsaved = imgsaved
         prnt_time = time.time()
         lhmn_temp = 36.5
-        if prnt_time-past_time > 0.5 and (lf_path != None) and (limgsaved == 1) and (lhmn_temp>30): #간격을 1로 둠
+        if prnt_time-past_time > 0.5 and (limgsaved == 1) and (lhmn_temp>30): #간격을 1로 둠
             try:
-                imgfile = open(lf_path, 'rb')
-                # res = requests.post("http://3.35.178.102/mask/", files = {'file':imgfile})
+                # imgfile = open(lf_path, 'rb')
+                imgfile = io.BytesIO(lf_path)
                 res = requests.post('http://3.35.178.102/gateprediction/', files={'image':imgfile}, data={"temperature":lhmn_temp}) #이거슨 그.. 온도도 보낼 때
-                #print(lhmn_temp)
-                imgfile.close()
-                # print("posted")
-                #여기서 f_path 값에 접근해서 파일 삭제
-                try:
-                    os.remove(lf_path)
-                except FileNotFoundError:
-                    print("delete error occured! filenotError but continue")
-                    pass
+                # imgfile.close()
+                # try:
+                #     os.remove(lf_path)
+                # except FileNotFoundError:
+                #     print("delete error occured! filenotError but continue")
+                #     pass
                 if res.status_code == 200:
                     mask_state = res.json()['mask']
                 else:
