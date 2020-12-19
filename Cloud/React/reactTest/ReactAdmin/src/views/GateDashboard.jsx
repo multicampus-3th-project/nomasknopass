@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from "axios";
+import useInterval from 'use-interval'
+
 
 // Wijmo imports
 import 'wijmo/styles/wijmo.css';
@@ -16,7 +18,6 @@ import { recentSales, salesByCountry, salesByPerson } from '../data/data';
 // css
 import '../assets/css/now-ui-dashboard.css';
 import '../assets/css/main.css';
-// import '../index.css';
 
 import {
   Card,
@@ -37,10 +38,6 @@ import {
   Input,
   UncontrolledTooltip,
 } from "reactstrap";
-
-import * as wijmo from 'wijmo/wijmo';
-
-const key = 'dbsydde@gmail.com,E958494376337666#B0zHnisnOiwmbBJye0ICRiwiI34TQhJWQ7VVQKpmWrg5Y7ZWahx6SUN4drsyaZZ5YiVDTZhDa9kVbm56K6Y7bQZFNJlWeVR4SBhlZjVmbLNVO88maEZmM7l6YVBFVhNUNUtiTpNEWEhEd0lHVpR6QZljdXd4UuFHT9cEWJNlVHRjbxEkd8InTwlXda3WekJHWlZGc9A5ZLhzT9kVVhl6bip5KJVWT48WapFVQx4mQZ3UNLVTcPRkRrkDUrtyL6xkUJhTW7V4MvsWb8gUQh36Z6ZnVu5GcXl7SS9UVlBHdBdVTYJUbHlWSsdlQ7h7d7Q5KW9mYwkWW6YGS74kVl9EavBzUMRlQH34bJ5mS7QXZvU5RWhHTXJUOzNHT6VmWSNHTVd6b7kGU956cYRVTw24VqVVdGh7d7QDaihDMvl4LsVVVCR5RIFnZQVDNvN5NtZmRUl6R6gDdsJFO6U4cNRGWDFEbDlGc9tUcHxmI0IyUiwiIDR4Q9QkNFJjI0ICSiwSN7cTO5ITM9UTM0IicfJye&Qf35VfikEMyIlI0IyQiwiIu3Waz9WZ4hXRgACdlVGaThXZsZEIv5mapdlI0IiTisHL3JSNJ9UUiojIDJCLi86bpNnblRHeFBCIyV6dllmV4J7bwVmUg2Wbql6ViojIOJyes4nILdDOIJiOiMkIsIibvl6cuVGd8VEIgc7bSlGdsVXTg2Wbql6ViojIOJyes4nI4YkNEJiOiMkIsIibvl6cuVGd8VEIgAVQM3EIg2Wbql6ViojIOJyes4nIzMEMCJiOiMkIsISZy36Qg2Wbql6ViojIOJyes4nIVhzNBJiOiMkIsIibvl6cuVGd8VEIgQnchh6QsFWaj9WYulmRg2Wbql6ViojIOJyebpjIkJHUiwiIyEDM4QDMgcTMyEDMyAjMiojI4J7QiwiI6ETMwEjMwIjI0ICc8VkIsISbvNmLslWYtdGQlRGZ9NnYkJiOiEmTDJCLlVnc4pjIsZXRiwiI6YjN7MzM6czM4kDN8UTOiojIklkIs4nIzYHMyAjMiojIyVmdiwSZzxWYmijPy'
 
 
 const ChartPanel = ({ title, children }) => { 
@@ -112,7 +109,6 @@ const SalesPie = ({ salesData }) => {
       <FlexPie itemsSource={salesData}
         binding="count"
         bindingName="time"
-        innerRadius={0.70}
         style={{ height: "250px" }} 
                 palette={['rgba(255,91,82, 1)', 'rgba(82,146,255, 1)', 'rgba(255,203,83, 1)', 'rgba(47,219,159, 1)']} >
         <wjChartAnimate.FlexChartAnimation animationMode="All" easing="Swing"></wjChartAnimate.FlexChartAnimation>
@@ -129,13 +125,15 @@ const TransactionList = ({ transactions }) => {
     // <DataPanel title="방문 기록">
     <div class="transaction">
       <FlexGrid style={{ width: "100%" }}
-        itemsSource={transactions}>
+        itemsSource={transactions}
+        showMarquee={true}>
+        <FlexGridColumn header="id" binding="id" width="1*" />
         <FlexGridColumn header="통과 여부" binding="ispass" width="1*" />
         <FlexGridColumn header="체온" binding="temperature" width="1*" />
         <FlexGridColumn header="방문 시각" binding="visited" width="2*" />
       </FlexGrid>
       <div class="page">
-      <CollectionViewNavigator headerFormat="Page {currentPage:n0} of {pageCount:n0}" byPage={true} cv={transactions}/>
+      <CollectionViewNavigator headerFormat="{currentPage:n0} / {pageCount:n0}" byPage={true} cv={transactions}/>
       </div>
       </div>
     // </DataPanel>
@@ -150,11 +148,14 @@ const TransactionList = ({ transactions }) => {
     const [ visitedCount, setVisitedCount ] = useState([]);
 
     useEffect(() => {
-      wijmo.setLicenseKey(key);
       _getDB();
       _getIsPass();
       _getvisitedCount();
     }, []);
+
+    useInterval(() => {
+      _getDB();
+    }, 6000);
 
     const dataEndpoint =
     "https://o43ghtnv70.execute-api.ap-northeast-2.amazonaws.com/dev/data";
@@ -172,11 +173,8 @@ const TransactionList = ({ transactions }) => {
           data = res.data;
       });
       setGateData(new CollectionView(data, {
-        pageSize: 10,
+        pageSize: 8,
       }));
-    //   return new CollectionView(data, {
-    //     pageSize: 6,
-    // });
     };
 
     const _getIsPass = async () => {
@@ -195,7 +193,6 @@ const TransactionList = ({ transactions }) => {
 
     const calculateSales = () => {
       let totalSales = 0;
-      // console.log("맞잖아!!!!!!!!!!" + ispassData[0]['count']);
       totalSales = ispassData[0]['count'] + ispassData[1]['count']
       return totalSales;
     }

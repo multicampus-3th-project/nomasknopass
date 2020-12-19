@@ -14,17 +14,17 @@ import pymysql
 image_dir = '/home/ubuntu/kf99_images/'
 lambda_client = boto3.client('lambda',
                              region_name='ap-northeast-2',
-                             aws_access_key_id='AKIA53OSENDNTO5R4FGM',
-                             aws_secret_access_key='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'
+                             aws_access_key_id='',
+                             aws_secret_access_key=''
                              )
 sns_client = boto3.client('sns',
                           region_name='ap-northeast-2',
-                          aws_access_key_id='AKIA53OSENDNQW6BW3ZV',
-                          aws_secret_access_key='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'
+                          aws_access_key_id='',
+                          aws_secret_access_key=''
                           )
 rds_host = "kf99database.cu3wxbwt4src.ap-northeast-2.rds.amazonaws.com"
 name = "admin"
-password = "qjtwlaktmzm"
+password = ""
 db_name = "kf99"
 conn = pymysql.connect(rds_host, user=name, passwd=password, db=db_name, connect_timeout=5)
 
@@ -42,8 +42,7 @@ def predict_mask_gate(request):
         except:
             return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
 
-
-
+        # 기존 모델
         # mask_result = predict_one(filename)
         # if mask_result == 4:
         #     return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -55,7 +54,7 @@ def predict_mask_gate(request):
         # return JsonResponse(json_response, status=status.HTTP_200_OK)
         #
 
-
+        # YOLO 모델
         imageSource = image_dir + filename
         mask, nomask, incorrectmask = predict_cctv(imageSource)
 
@@ -74,7 +73,7 @@ def predict_mask_gate(request):
 
         json_response = {"mask": mask_result,
                          "temperature": temperature_result}
-        load.LoadConfig.temperature = temperature_result
+        load.predictDataConfig.temperature = temperature_result
         os.remove(imageSource)
         return JsonResponse(json_response, status=status.HTTP_200_OK)
 
@@ -90,20 +89,45 @@ def predict_mask_cctv(request):
 
     imageSource = image_dir + filename
     mask, nomask, incorrectmask = predict_cctv(imageSource)
+
+    os.remove(image_dir + filename)
+    insert_ismask_cctv(mask, nomask, incorrectmask)
+
+    if nomask > 0 or incorrectmask > 0:
+        nomask_state = True
+    else:
+        nomask_state = False
+    load.predictDataConfig.nomask.append(nomask_state)
+    filtering_nomask()
+
     json_response = {"mask": mask,
                      "nomask": nomask,
                      "incorrectmask": incorrectmask}
-    os.remove(image_dir + filename)
-    insert_ismask_cctv(mask, nomask, incorrectmask)
+
     return JsonResponse(json_response, status=status.HTTP_200_OK)
+
+
+def filtering_nomask():
+    if len(load.predictDataConfig.nomask) is 6:
+        isNoti = True
+        for state in load.predictDataConfig.nomask:
+            if state is False:
+                isNoti = False
+        if isNoti is True:
+            notificate_nomask()
+        else:
+            del (load.predictDataConfig.nomask[0])
 
 
 def insert_ismask_cctv(mask, nomask, incorrectmask):
     with conn.cursor() as cur:
         cur.execute("set time_zone=\'Asia/Seoul\'")
-        cur.execute("insert into cctv_state(mask, nomask, incorrectmask) values(" + str(mask) + "," + str(nomask) + "," + str(incorrectmask) + ")")
+        cur.execute(
+            "insert into cctv_state(mask, nomask, incorrectmask) values(" + str(mask) + "," + str(nomask) + "," + str(
+                incorrectmask) + ")")
         conn.commit()
         cur.close()
+
 
 @api_view(['POST'])
 def insert_ispass(request):
@@ -116,18 +140,18 @@ def insert_ispass(request):
         lambda_client.invoke(
             FunctionName='insert_DB',
             InvocationType='Event',
-            Payload=json.dumps({"ispass": request.data['ispass'], "temperature": load.LoadConfig.temperature})
+            Payload=json.dumps({"ispass": request.data['ispass'], "temperature": load.predictDataConfig.temperature})
         )
     except:
         return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     json_response = {"ispass": ispass,
-                     "temperature": load.LoadConfig.temperature}
+                     "temperature": load.predictDataConfig.temperature}
     return HttpResponse(json_response, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
 def notificate_emergency(request):
-    message = {"GCM": "{ \"data\": { \"title\": \"KF99\",\"message\": \"누군가 비정상적으로 게이트에 접근했습니다. \" } }"}
+    message = {"GCM": "{ \"data\": { \"title\": \"KF99 Gate\",\"message\": \"누군가 비정상적으로 게이트에 접근했습니다. \" } }"}
     try:
         sns_client.publish(
             # TargetArn='arn:aws:sns:ap-northeast-2:952312817883:endpoint/GCM/kf99_admin/161d6f80-a767-3162-b6d9-53f41cf46c9d',
@@ -143,6 +167,16 @@ def handle_uploaded_file(f, filename):
     with open(image_dir + filename, 'wb+') as destination:
         for chunk in f.chunks():
             destination.write(chunk)
+
+
+def notificate_nomask():
+    message = {"GCM": "{ \"data\": { \"title\": \"KF99 CCTV\",\"message\": \"마스크를 벗은 사람이 감지되었습니다. \" } }"}
+    sns_client.publish(
+        # TargetArn='arn:aws:sns:ap-northeast-2:952312817883:endpoint/GCM/kf99_admin/161d6f80-a767-3162-b6d9-53f41cf46c9d',
+        TargetArn='arn:aws:sns:ap-northeast-2:952312817883:endpoint/GCM/kf99_admin/07c925ad-eb2f-31b0-90d6-23af17158f01',
+        MessageStructure='json',
+        Message=json.dumps(message))
+    load.predictDataConfig.nomask = []
 
 
 # 얼굴만 자르는 함수 코드

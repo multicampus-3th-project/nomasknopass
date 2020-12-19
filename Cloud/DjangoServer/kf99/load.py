@@ -9,7 +9,6 @@ class LoadConfig(AppConfig):
     haarcascade_dir = '/home/lab07/MTCNN HaarCascade'
     nose_cascade = cv2.CascadeClassifier(haarcascade_dir + '/haarcascade_mcs_nose.xml')
     detector = MTCNN()
-    temperature = 0
 
     net = cv2.dnn.readNet('/home/lab07/darknet/backup/yolov4_custom_last.weights',
                           '/home/lab07/darknet/custom/yolov4_custom.cfg')
@@ -18,6 +17,14 @@ class LoadConfig(AppConfig):
     with open("/home/lab07/darknet/custom/custom.name", "r") as f:
         # 파일 주소 확인
         classes = f.read().splitlines()
+
+class predictDataConfig(AppConfig):
+    # Gate 체온 데이터
+    temperature = 0
+    # CCTV 마스크 미착용자 감지 카운트
+    nomask = []
+
+
 
 
 
