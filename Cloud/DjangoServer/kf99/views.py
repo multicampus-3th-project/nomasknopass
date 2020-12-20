@@ -14,17 +14,22 @@ import pymysql
 image_dir = '/home/ubuntu/kf99_images/'
 lambda_client = boto3.client('lambda',
                              region_name='ap-northeast-2',
-                             aws_access_key_id='AKIA53OSENDNR3JOSUZ6',
-                             aws_secret_access_key='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'
+                             aws_access_key_id='',
+                             aws_secret_access_key=''
                              )
 sns_client = boto3.client('sns',
                           region_name='ap-northeast-2',
-                          aws_access_key_id='AKIA53OSENDN4NM637VY',
-                          aws_secret_access_key='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'
+                          aws_access_key_id='',
+                          aws_secret_access_key=''
                           )
+s3_client = boto3.client('s3',
+                         region_name='ap-northeast-2',
+                         aws_access_key_id='',
+                         aws_secret_access_key=''
+                         )
 rds_host = "kf99database.cu3wxbwt4src.ap-northeast-2.rds.amazonaws.com"
 name = "admin"
-password = "qjtwlaktmzm"
+password = ""
 db_name = "kf99"
 conn = pymysql.connect(rds_host, user=name, passwd=password, db=db_name, connect_timeout=5)
 
@@ -90,8 +95,10 @@ def predict_mask_cctv(request):
     imageSource = image_dir + filename
     mask, nomask, incorrectmask = predict_cctv(imageSource)
 
-    os.remove(image_dir + filename)
     insert_ismask_cctv(mask, nomask, incorrectmask)
+
+    s3_client.upload_file(imageSource, 'kf99-cctv-image', 'cctv-image.jpg')
+
 
     if nomask > 0 or incorrectmask > 0:
         nomask_state = True
@@ -103,6 +110,8 @@ def predict_mask_cctv(request):
     json_response = {"mask": mask,
                      "nomask": nomask,
                      "incorrectmask": incorrectmask}
+
+    os.remove(image_dir + filename)
 
     return JsonResponse(json_response, status=status.HTTP_200_OK)
 
@@ -128,14 +137,14 @@ def insert_ismask_cctv(mask, nomask, incorrectmask):
         conn.commit()
         cur.close()
 
-    @api_view(['POST'])
-    def insert_ispass(request):
-        try:
-            ispass = request.data['ispass']
-        except:
-            return HttpResponse(
-                status=status.HTTP_400_BAD_REQUEST
-            )
+@api_view(['POST'])
+def insert_ispass(request):
+    try:
+        ispass = request.data['ispass']
+    except:
+        return HttpResponse(
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
     try:
         lambda_client.invoke(

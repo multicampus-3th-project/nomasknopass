@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import axios from "axios";
 import useInterval from 'use-interval'
 import ToggleSwitch from '../components/ToggleSwitch';
+import PanelHeader from '../components/PanelHeader';
+import ReactstrapImageGallery from "../components/gallery/ReactstrapImageGallery";
 
 // Wijmo imports
 import 'wijmo/styles/wijmo.css';
@@ -9,6 +11,7 @@ import * as wjChart from 'wijmo/wijmo.react.chart';
 import * as wjCharts from 'wijmo/wijmo.chart';
 import * as wjChartAnimate from 'wijmo/wijmo.react.chart.animation';
 import * as wjGauge from 'wijmo/wijmo.react.gauge';
+
 // Data imports
 import { covidTotal, covidDay, tempData } from '../data/data';
 
@@ -36,13 +39,20 @@ import {
   UncontrolledTooltip,
 } from "reactstrap";
 
+const images_url = [{"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
+                {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
+                {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
+                {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
+                {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
+                {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'}]
+
 const CCTVReport = ({ data, palette }) => {
   return (
     <div className="line-total">
       <wjChart.FlexChart itemsSource={data} bindingX="time" chartType="Line" palette={palette}>
         <wjChart.FlexChartLegend position="Bottom"></wjChart.FlexChartLegend>
         <wjChart.FlexChartAxis wjProperty="axisY"></wjChart.FlexChartAxis>
-        <wjChart.FlexChartSeries binding="nomask" name="마스크 미착용"></wjChart.FlexChartSeries>
+        <wjChart.FlexChartSeries binding="nomask" name="마스크 미착용" chartType={wjCharts.ChartType.LineSymbols}></wjChart.FlexChartSeries>
         <wjChart.FlexChartLineMarker isVisible={false} lines="Both" interaction="Move">
         </wjChart.FlexChartLineMarker>
         {/* <wjChartAnimate.FlexChartAnimation animationMode="Point"></wjChartAnimate.FlexChartAnimation> */}
@@ -63,6 +73,13 @@ const CCTVDashboard = () => {
   const [CCTVData, setCCTVData] = useState([{ 'mask': 0, 'nomask': 0, 'incorrectmask': 0 }]);
   const [palette, setPalette] = useState(['rgba(255,136,0,1)']);
   const [updateStart, setUpdateStart] = useState(false);
+  const [images, setImages] = useState([{"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
+  {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
+  {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
+  {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
+  {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
+  {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'}]
+)
 
   useEffect(() => {
     _getCCTVData();
@@ -70,6 +87,8 @@ const CCTVDashboard = () => {
     if (updateStart) {
       interval = setInterval(() => {
         _getCCTVData();
+        setImages(images_url);
+        console.log("하는거맞자너..");
       }, 6000);
     }
     return () => {
@@ -94,21 +113,19 @@ const CCTVDashboard = () => {
     e.preventDefault();
     const start = updateStart;
     setUpdateStart(!start);
-    console.log("바꿨다");
   }
 
   const onNewsletterChange = (checked) => {
-    console.log("onchange 호출."+ checked);
     setUpdateStart(checked);
   }
 
   return (
     <>
-      <div>
-        <div className="content">
+    <PanelHeader size="sm" />
+        <div className="cctv">
           <Row>
             <Col sm="12" md={{ size: 6}} style={{padding: '20px'}}> 
-                <ToggleSwitch id="newsletter" checked={ updateStart } onChange={ onNewsletterChange }/>
+                <ToggleSwitch id="newsletter" checked={ updateStart } onChange={ onNewsletterChange } small={true}/>
                 <label htmlFor="newsletter" className="toggle-label">실시간 업데이트</label>
             </Col>
           </Row>
@@ -214,7 +231,45 @@ const CCTVDashboard = () => {
                 </CardHeader>
                 <CardBody>
                   <div className="chart-area">
-                    <CCTVReport data={CCTVData} palette={palette} />
+                    <CCTVReport data={CCTVData.slice(CCTVData.length-11,CCTVData.length)} palette={palette} />
+                  </div>
+                </CardBody>
+                <CardFooter>
+                  <div className="stats">
+                    <i className="now-ui-icons arrows-1_refresh-69" /> Just
+                    Updated
+                  </div>
+                </CardFooter>
+              </Card>
+            </Col>
+          </Row>
+
+          <Row>
+            <Col xs={12} md={0}>
+              <Card className="card-chart card-chart-long">
+                <CardHeader>
+                  <h5 className="card-category">CCTV Total</h5>
+                  <CardTitle tag="h4">CCTV 모니터링</CardTitle>
+                  <UncontrolledDropdown>
+                    <DropdownToggle
+                      className="btn-round btn-outline-default btn-icon"
+                      color="default"
+                    >
+                      <i className="now-ui-icons loader_gear" />
+                    </DropdownToggle>
+                    <DropdownMenu right>
+                      <DropdownItem>Action</DropdownItem>
+                      <DropdownItem>Another Action</DropdownItem>
+                      <DropdownItem>Something else here</DropdownItem>
+                      <DropdownItem className="text-danger">
+                        Remove data
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </UncontrolledDropdown>
+                </CardHeader>
+                <CardBody>
+                  <div className="gallery-area">
+                  <ReactstrapImageGallery images={images}/>
                   </div>
                 </CardBody>
                 <CardFooter>
@@ -227,7 +282,6 @@ const CCTVDashboard = () => {
             </Col>
           </Row>
         </div>
-      </div>
     </>
   )
 

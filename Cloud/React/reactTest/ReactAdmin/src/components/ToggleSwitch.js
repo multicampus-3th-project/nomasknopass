@@ -5,7 +5,7 @@ import PropTypes from "prop-types";
 const ToggleSwitch = ({ id, name, checked, onChange, optionLabels, small, disabled }) => {
 
     return (
-      <div className={"toggle-switch" + (small ? " small-switch" : "")}>
+      <div className={"toggle-switch" + (small ? " small-switch" : "")} style={{marginTop: '-6px'}}>
         <input
           type="checkbox"
           name={name}

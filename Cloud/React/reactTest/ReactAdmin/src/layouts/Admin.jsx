@@ -1,5 +1,6 @@
 import NavBar from '../components/NavBar';
 import Sidebar from "../components/Sidebar";
+import DemoNavbar from "../components/DemoNavbar";
 import routes from "../routes.jsx";
 import React from "react";
 import { Route, Switch, Redirect } from "react-router-dom";
@@ -43,6 +44,7 @@ class Admin extends React.Component {
             backgroundColor={this.state.backgroundColor}
           />
           <div className="main-panel" ref={this.mainPanel}>
+          <DemoNavbar {...this.props} />
             <Switch>
               {routes.map((prop, key) => {
                 return (
