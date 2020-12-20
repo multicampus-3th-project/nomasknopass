@@ -23,10 +23,6 @@ class Admin extends React.Component {
   };
   mainPanel = React.createRef();
 
-  componentWillMount() {
-    console.log('aaaaaaaaaaa'+this.props);
-  }
-
   render() {
     return (
       <AmplifyAuthenticator>

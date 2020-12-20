@@ -1235,6 +1235,7 @@ textarea {
   font-weight: 400;
 }
 p {
+  font-size: 0.8rem;
   font-weight: 100;
 }
 h1, h2, h3, h4, h5, h6 {
@@ -4475,13 +4476,15 @@ Created using IcoMoon - icomoon.io
   }
   .sidebar[data-color="blue"]:after,
   .off-canvas-sidebar[data-color="blue"]:after {  
-    background: #6A7CA2; }
+    /* background-image: linear-gradient(180deg, red, yellow); */
+    background: #D84A49; 
+  }
   .sidebar[data-color="blue"] .nav li.active > a,
   .off-canvas-sidebar[data-color="blue"] .nav li.active > a {
-    color: #6A7CA2; }
+    color: #c53d25; }
     .sidebar[data-color="blue"] .nav li.active > a i,
     .off-canvas-sidebar[data-color="blue"] .nav li.active > a i {
-      color: #6A7CA2; }
+      color: #c53d25; }
   .sidebar[data-color="green"]:after,
   .off-canvas-sidebar[data-color="green"]:after {
     background: #18ce0f; }
@@ -4736,4 +4739,6 @@ Created using IcoMoon - icomoon.io
     --amplify-primary-tint: #7d8fb6;
     --amplify-primary-shade: #55627e;
   }
-
+.logo-img {
+  max-width: 25px;
+}
