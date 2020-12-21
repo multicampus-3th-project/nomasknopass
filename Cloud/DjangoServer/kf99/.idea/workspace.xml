@@ -2,10 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="47f210b9-9598-4417-9990-13054899ac21" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/../../IoT-Core-Key/8f6a8e0430-certificate.pem.crt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../IoT-Core-Key/8f6a8e0430-private.pem.key" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../IoT-Core-Key/8f6a8e0430-public.pem.key" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../IoT-Core-Key/AmazonRootCA1.pem" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../React/reactTest/ReactAdmin/.eslintcache" beforeDir="false" afterPath="$PROJECT_DIR$/../../React/reactTest/ReactAdmin/.eslintcache" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../React/reactTest/ReactAdmin/src/assets/css/now-ui-dashboard.css" beforeDir="false" afterPath="$PROJECT_DIR$/../../React/reactTest/ReactAdmin/src/assets/css/now-ui-dashboard.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../request테스트/Untitled.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/../../request테스트/Untitled.ipynb" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,6 +27,7 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/.." />
   </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="SvnConfiguration">
     <configuration />
   </component>

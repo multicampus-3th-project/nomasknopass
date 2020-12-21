@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from "axios";
 import useInterval from 'use-interval'
+import PanelHeader from '../components/PanelHeader';
 
 
 // Wijmo imports
@@ -40,7 +41,7 @@ import {
 } from "reactstrap";
 
 
-const ChartPanel = ({ title, children }) => { 
+const ChartPanel = ({ title, children }) => {
   return (
     <div className="col-lg-4 col-md-6 col-sm-12 mt-1">
       <div className="card-header">
@@ -56,7 +57,7 @@ const ChartPanel = ({ title, children }) => {
     </div>
   );
 }
-  
+
 const DataPanel = ({ title, children }) => {
   return (
     <div className="col-sm-12">
@@ -69,23 +70,23 @@ const DataPanel = ({ title, children }) => {
     </div>
   )
 }
-  
+
 const Gauge = ({ data }) => {
   return (
     // <ChartPanel title="총 방문자 수">
-      <div className="gauge">
-        <RadialGauge
-          min={0} max={3000}
-          step={50} isReadOnly={true}
-          thickness={0.15}
-          value={data}
-          isAnimated={true}
-        />
-      </div>
+    <div className="gauge">
+      <RadialGauge
+        min={0} max={3000}
+        step={50} isReadOnly={true}
+        thickness={0.15}
+        value={data}
+        isAnimated={true}
+      />
+    </div>
     // </ChartPanel>
   );
 }
-  
+
 const SalesChart = ({ salesData }) => {
   return (
     // <ChartPanel title="게이트 통과 여부">
@@ -93,15 +94,15 @@ const SalesChart = ({ salesData }) => {
       <FlexChart itemsSource={salesData}
         bindingX="ispass"
         style={{ height: "250px" }}
-        palette={['rgba(169,49,222, 1)']}>
+        palette={['l(0,0,0,1)#E13B59-#FBC1AC']}>
         <FlexChartSeries name="count" binding="count" />
         <wjChartAnimate.FlexChartAnimation></wjChartAnimate.FlexChartAnimation>
       </FlexChart>
-      </div>
+    </div>
     // </ChartPanel>
   );
 }
-  
+
 const SalesPie = ({ salesData }) => {
   return (
     // <ChartPanel title="시간대별 방문자 수">
@@ -109,17 +110,16 @@ const SalesPie = ({ salesData }) => {
       <FlexPie itemsSource={salesData}
         binding="count"
         bindingName="time"
-        style={{ height: "250px" }} 
-                palette={['rgba(255,91,82, 1)', 'rgba(82,146,255, 1)', 'rgba(255,203,83, 1)', 'rgba(47,219,159, 1)']} >
+        style={{ height: "250px" }}
+        palette={['rgba(242,194,105, 1)', 'rgba(86,21,57, 1)', 'rgba(220,48,81, 1)', 'rgba(247,100,47, 1)']} >
         <wjChartAnimate.FlexChartAnimation animationMode="All" easing="Swing"></wjChartAnimate.FlexChartAnimation>
-
-        </FlexPie>
+      </FlexPie>
 
     </div>
     // </ChartPanel>
   );
 }
-  
+
 const TransactionList = ({ transactions }) => {
   return (
     // <DataPanel title="방문 기록">
@@ -133,79 +133,79 @@ const TransactionList = ({ transactions }) => {
         <FlexGridColumn header="방문 시각" binding="visited" width="2*" />
       </FlexGrid>
       <div class="page">
-      <CollectionViewNavigator headerFormat="{currentPage:n0} / {pageCount:n0}" byPage={true} cv={transactions}/>
+        <CollectionViewNavigator headerFormat="{currentPage:n0} / {pageCount:n0}" byPage={true} cv={transactions} />
       </div>
-      </div>
+    </div>
     // </DataPanel>
   );
 }
 
-  const GateDashboard = () => {
-    const [ gateData, setGateData ] = useState([]);
-    const [ ispassData, setIsPassData ] = useState([
-      {"count": 0},
-      {"count": 0}]);
-    const [ visitedCount, setVisitedCount ] = useState([]);
+const GateDashboard = () => {
+  const [gateData, setGateData] = useState([]);
+  const [ispassData, setIsPassData] = useState([
+    { "count": 0 },
+    { "count": 0 }]);
+  const [visitedCount, setVisitedCount] = useState([]);
 
-    useEffect(() => {
-      _getDB();
-      _getIsPass();
-      _getvisitedCount();
-    }, []);
+  useEffect(() => {
+    _getDB();
+    _getIsPass();
+    _getvisitedCount();
+  }, []);
 
-    useInterval(() => {
-      _getDB();
-    }, 6000);
+  useInterval(() => {
+    _getDB();
+  }, 6000);
 
-    const dataEndpoint =
+  const dataEndpoint =
     "https://o43ghtnv70.execute-api.ap-northeast-2.amazonaws.com/dev/data";
-    const ispassEndpoint = 
+  const ispassEndpoint =
     "https://o43ghtnv70.execute-api.ap-northeast-2.amazonaws.com/dev/ispass";
-    const visitedEndpoint = 
+  const visitedEndpoint =
     "https://o43ghtnv70.execute-api.ap-northeast-2.amazonaws.com/dev/visitedcount";
 
 
-    const _getDB = async () => {
-      let data = [];
-      await axios.get(dataEndpoint).then((res) => {
-          // setGateData(res.data);
-          console.log(res.data);
-          data = res.data;
-      });
-      setGateData(new CollectionView(data, {
-        pageSize: 8,
-      }));
-    };
+  const _getDB = async () => {
+    let data = [];
+    await axios.get(dataEndpoint).then((res) => {
+      // setGateData(res.data);
+      console.log(res.data);
+      data = res.data;
+    });
+    setGateData(new CollectionView(data, {
+      pageSize: 8,
+    }));
+  };
 
-    const _getIsPass = async () => {
-      await axios.get(ispassEndpoint).then((res) => {
-        setIsPassData(res.data)
-        console.log(res.data);
-      })
-    }
+  const _getIsPass = async () => {
+    await axios.get(ispassEndpoint).then((res) => {
+      setIsPassData(res.data)
+      console.log(res.data);
+    })
+  }
 
-    const _getvisitedCount = async () => {
-      await axios.get(visitedEndpoint).then((res) => {
-        setVisitedCount(res.data)
-        console.log("visited : " + res.data);
-      })
-    }
+  const _getvisitedCount = async () => {
+    await axios.get(visitedEndpoint).then((res) => {
+      setVisitedCount(res.data)
+      console.log("visited : " + res.data);
+    })
+  }
 
-    const calculateSales = () => {
-      let totalSales = 0;
-      totalSales = ispassData[0]['count'] + ispassData[1]['count']
-      return totalSales;
-    }
+  const calculateSales = () => {
+    let totalSales = 0;
+    totalSales = ispassData[0]['count'] + ispassData[1]['count']
+    return totalSales;
+  }
 
-    return (
-      <>
-          <div>
-            <div className="content">
+  return (
+    <>
+      <PanelHeader size="sm" />
+        <div className="content">
 
-            <Row>
+          <Row>
             <Col xs={12} md={4}>
               <Card className="card-chart">
-                <CardHeader>  
+                <CardHeader>
                   <h5 className="card-category">Gate Total</h5>
                   <CardTitle tag="h4">총 방문자 수</CardTitle>
                   <UncontrolledDropdown>
@@ -227,13 +227,12 @@ const TransactionList = ({ transactions }) => {
                 </CardHeader>
                 <CardBody>
                   <div className="chart-area">
-                  <Gauge data={calculateSales()} />
+                    <Gauge data={calculateSales()} />
                   </div>
                 </CardBody>
                 <CardFooter>
                   <div className="stats">
-                    <i className="now-ui-icons arrows-1_refresh-69" /> Just
-                    Updated
+                    <br></br>
                   </div>
                 </CardFooter>
               </Card>
@@ -262,13 +261,12 @@ const TransactionList = ({ transactions }) => {
                 </CardHeader>
                 <CardBody>
                   <div className="chart-area">
-                  <SalesChart salesData={ispassData } />
+                    <SalesChart salesData={ispassData} />
                   </div>
                 </CardBody>
                 <CardFooter>
                   <div className="stats">
-                    <i className="now-ui-icons arrows-1_refresh-69" /> Just
-                    Updated
+                    <br></br>
                   </div>
                 </CardFooter>
               </Card>
@@ -297,19 +295,18 @@ const TransactionList = ({ transactions }) => {
                 </CardHeader>
                 <CardBody>
                   <div className="chart-area">
-                  <SalesPie salesData={visitedCount} />
+                    <SalesPie salesData={visitedCount} />
                   </div>
                 </CardBody>
                 <CardFooter>
                   <div className="stats">
-                    <i className="now-ui-icons arrows-1_refresh-69" /> Just
-                    Updated
+                    <br></br>
                   </div>
                 </CardFooter>
               </Card>
             </Col>
-            </Row>
-            <Row>
+          </Row>
+          <Row>
             <Col xs={12} md={0}>
               <Card className="card-chart card-chart-long">
                 <CardHeader>
@@ -334,7 +331,7 @@ const TransactionList = ({ transactions }) => {
                 </CardHeader>
                 <CardBody>
                   <div className="chart-area">
-                  <TransactionList transactions={gateData} />
+                    <TransactionList transactions={gateData} />
                   </div>
                 </CardBody>
                 <CardFooter>
@@ -345,13 +342,12 @@ const TransactionList = ({ transactions }) => {
                 </CardFooter>
               </Card>
             </Col>
-            </Row>
-            </div>
-            </div>
-          </>
-    )
-    
+          </Row>
+        </div>
+    </>
+  )
 
-  }
+
+}
 
 export default GateDashboard;

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from "axios";
+import PanelHeader from '../components/PanelHeader';
 
 // Wijmo imports
 import 'wijmo/styles/wijmo.css';
@@ -40,7 +41,8 @@ const CovidTotal = ({ data, palette }) => {
                 <wjChart.FlexChartLegend position="None"></wjChart.FlexChartLegend>
                 <wjChart.FlexChartAxis wjProperty="axisX" labelAngle={-45}></wjChart.FlexChartAxis>
                 <wjChart.FlexChartAxis wjProperty="axisY"></wjChart.FlexChartAxis>
-                <wjChart.FlexChartSeries binding="decidecnt" name="누적 확진자 수"></wjChart.FlexChartSeries>
+                <wjChart.FlexChartSeries binding="decidecnt" name="누적 확진자 수" 
+                style={{fill:'l(0, 0, 0, 1)#910404-#ff0000:1:0.5'}}></wjChart.FlexChartSeries>
                 <wjChartAnimate.FlexChartAnimation animationMode="Point"></wjChartAnimate.FlexChartAnimation>
             </wjChart.FlexChart>
         </div>
@@ -110,10 +112,10 @@ const COVIDDashboard = () => {
 
     return (
         <>
-            <div>
+        <PanelHeader size="sm" />
                 <div className="content">
                     <Row>
-                        <Col xs={12} md={6}>
+                        <Col xs={12} md={0}>
                             <Card className="card-chart card-chart-long">
                                 <CardHeader>
                                     <h5 className="card-category">COVID19 Total</h5>
@@ -148,7 +150,7 @@ const COVIDDashboard = () => {
                                 </CardFooter>
                             </Card>
                         </Col>
-                        <Col xs={12} md={6}>
+                        <Col xs={12} md={0}>
                             <Card className="card-chart card-chart-long">
                                 <CardHeader>
                                     <h5 className="card-category">COVID19 Total</h5>
@@ -222,7 +224,6 @@ const COVIDDashboard = () => {
                         </Col>
                     </Row>
                 </div>
-            </div>
         </>
     )
 

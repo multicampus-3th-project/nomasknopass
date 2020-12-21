@@ -22,6 +22,11 @@ sns_client = boto3.client('sns',
                           aws_access_key_id='',
                           aws_secret_access_key=''
                           )
+s3_client = boto3.client('s3',
+                         region_name='ap-northeast-2',
+                         aws_access_key_id='',
+                         aws_secret_access_key=''
+                         )
 rds_host = "kf99database.cu3wxbwt4src.ap-northeast-2.rds.amazonaws.com"
 name = "admin"
 password = ""
@@ -90,8 +95,10 @@ def predict_mask_cctv(request):
     imageSource = image_dir + filename
     mask, nomask, incorrectmask = predict_cctv(imageSource)
 
-    os.remove(image_dir + filename)
     insert_ismask_cctv(mask, nomask, incorrectmask)
+
+    s3_client.upload_file(imageSource, 'kf99-cctv-image', 'cctv-image.jpg')
+
 
     if nomask > 0 or incorrectmask > 0:
         nomask_state = True
@@ -103,6 +110,8 @@ def predict_mask_cctv(request):
     json_response = {"mask": mask,
                      "nomask": nomask,
                      "incorrectmask": incorrectmask}
+
+    os.remove(image_dir + filename)
 
     return JsonResponse(json_response, status=status.HTTP_200_OK)
 
@@ -128,13 +137,14 @@ def insert_ismask_cctv(mask, nomask, incorrectmask):
         conn.commit()
         cur.close()
 
-
 @api_view(['POST'])
 def insert_ispass(request):
     try:
         ispass = request.data['ispass']
     except:
-        return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
+        return HttpResponse(
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
     try:
         lambda_client.invoke(
