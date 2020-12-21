@@ -1,24 +1,19 @@
 # import required modules
-from flask import Flask, render_template, Response 
-import socket 
-import io
+from flask import Flask, render_template, Response, jsonify
+import numpy as np
+import socket, io, time, cv2, os, requests, pigpio, spidev, csv
 from gpiozero import Button, DistanceSensor
 from datetime import datetime
 from signal import pause
-import time
 from threading import Thread
 from multiprocessing import Process
-import pigpio
-import cv2
-import requests
-import os
 from pydub.playback import play
-import spidev
+from pydub import AudioSegment
+import pygame
+
+
 from smbus2 import SMBus
 from mlx90614 import MLX90614
-from pydub import AudioSegment
-from pydub.playback import play
-import csv
 
 # 플라스크 코딩 시작
 app = Flask(__name__) 
@@ -35,7 +30,7 @@ pi = pigpio.pi()
 READY_ZONE = 0.35
 CHECK_ZONE  = 0.45 #voltage 기준
 PASS_ZONE   = 1.2
-RETURN_ZONE = 0.22
+RETURN_ZONE = 0.25
 
 ##적외선센서를 이용한 거리를 측정해봅시다
 spi = spidev.SpiDev()
@@ -48,10 +43,30 @@ bus = SMBus(1)
 sensor = MLX90614(bus, address=0x5A)
 
 
+random_decimal = np.random.rand()
+
+@app.route('/update_decimal', methods = ['POST'])
+def updatedecimal():
+    global sound_state
+    infolog = ''
+    if(sound_state == 1):
+        infolog = '마스크 확인'
+    elif(sound_state == 2):
+        infolog = '안녕히 가세요'
+    elif(sound_state == 3):
+        infolog = '마스크 미착용'
+    elif(sound_state == 4):
+        infolog = '마스크 오착용'
+    elif(sound_state == 5):
+        infolog = '발열 확인'
+    else:
+        pass
+    return jsonify('', render_template('random_decimal_model.html', x = infolog))
+
 @app.route('/') 
-def index(): 
+def index():
    """Video streaming .""" 
-   return render_template('index.html')
+   return render_template('index.html', x=0)
 
 def gen(): 
    """Video streaming generator function."""
@@ -92,7 +107,7 @@ def mask_check(): #클라우드와 신호 주고 받기.
         lf_path = f_path
         limgsaved = imgsaved
         prnt_time = time.time()
-        lhmn_temp = 36.5
+        lhmn_temp = hmn_temp
         if prnt_time-past_time > 0.5 and (limgsaved == 1) and (lhmn_temp>30): #간격을 0.5로 둠
             try:
                 # imgfile = open(lf_path, 'rb')
@@ -110,16 +125,16 @@ def mask_check(): #클라우드와 신호 주고 받기.
                     print("모델 판단실패, 수신 코드", res.status_code)
             except:
                 print("open error occured! filenotError but continue")
-            if   mask_state == 0:# 0 쓴거
-                print("yMasked", mask_state)
-            elif mask_state == 1:# 1 안쓴거
-                print("nMasked", mask_state)
-            elif mask_state == 2:# 2 잘못쓴거
-                print("wMasked", mask_state)
-            elif mask_state == 4:# 4 감지 못한거
-                print("maskNotFound", mask_state)
-            else:
-                pass
+            # if   mask_state == 0:# 0 쓴거
+            #     print("yMasked", mask_state)
+            # elif mask_state == 1:# 1 안쓴거
+            #     print("nMasked", mask_state)
+            # elif mask_state == 2:# 2 잘못쓴거
+            #     print("wMasked", mask_state)
+            # elif mask_state == 4:# 4 감지 못한거
+            #     print("maskNotFound", mask_state)
+            # else:
+            #     pass
 
             #초기화하기
             lf_path = None
@@ -141,7 +156,6 @@ def human_state_check():
     prnt_hmn_dist = 0
     past_hmn_dist = 0
     voltage = []
-    voltage1 = []
     newList = []
     while True:
         adc = analog_read(0)
@@ -150,28 +164,27 @@ def human_state_check():
         #print(prnt_hmn_dist)
         if len(voltage)>9:
             del voltage[0]
-            newList = [x for x in voltage if(x>0.35 and x<0.51)]
+            newList = [x for x in voltage if(x>0.35 and x<0.50)]
             if (len(newList)>6) and (hmn_state != 1):
                 print("human approached")
                 wrongman = 0
                 hmn_state =  1
                 mask_state = -1
-            f = open("voltage.csv","w")
+            
         #if len(voltage1)>200:
+            #f = open("voltage.csv","w")
             #writer = csv.writer(f)
             #writer.writerow(voltage1)
             #print("```````````````````````````````job done`````````````````````````````````````")
             #break
-
-        if past_hmn_dist < READY_ZONE and prnt_hmn_dist > READY_ZONE and prnt_hmn_dist < CHECK_ZONE and ((hmn_state == 3) or (hmn_state == 2)) :
-            print("ready set")
-            hmn_state = 5
         #elif past_hmn_dist < CHECK_ZONE and prnt_hmn_dist > CHECK_ZONE and prnt_hmn_dist < PASS_ZONE and hmn_state == 5:
             #print("human approached")
             #wrongman = 0
             #hmn_state =  1
             #mask_state = -1
-        elif past_hmn_dist < PASS_ZONE and prnt_hmn_dist > PASS_ZONE and hmn_state == 1:
+
+
+        if past_hmn_dist < PASS_ZONE and prnt_hmn_dist > PASS_ZONE and hmn_state == 1:
             print("human passed")           
             hmn_state = 2
         elif past_hmn_dist > RETURN_ZONE and prnt_hmn_dist < RETURN_ZONE and past_hmn_dist < PASS_ZONE and hmn_state == 1:
@@ -191,24 +204,43 @@ def human_state_check():
         
 
 # sudo pigpiod
-def control_door(): #받은 신호와 사람 위치에 따라서 문을 열고 닫는 곳+사람에게 안내하는 곳..
+def checkingprocess(): #받은 신호와 사람 위치에 따라서 문을 열고 닫는 곳+사람에게 안내하는 곳..
     print("begin control_door")
     global hmn_state
     global mask_state
     global sound_state
     global wrongman
+    global hmn_temp
+    global door_state
     past_noticed = time.time()
+    past_warned = time.time()
     door_state = 0
     pst_door_state = 0
     is_judged = 0
     while True:
         prnt_noticed = time.time()
+        prnt_warned = time.time()
         if (prnt_noticed-past_noticed)>0.5: #0.5초간격 실행슨
-            if (door_state == 0) and (hmn_state == 1) and (mask_state == 0) and (is_judged == 0): # 사람이 포토존에 있고, 마스크를 썼을 경우 door_state = 1
+            lhmn_temp = hmn_temp
+            # print(lhmn_temp)
+            # print(sound_state)
+            if (door_state == 0) and (hmn_state == 1) and (mask_state == 0) and (is_judged == 0) and lhmn_temp < 38 : # 사람이 포토존에 있고, 마스크를 썼을 경우 door_state = 1
                 door_state = 1
                 is_judged = 1
                 sound_state = 1
                 print("you can pass")
+            elif (door_state == 0) and (hmn_state == 1) and (mask_state == 1) and (prnt_warned-past_warned)>3 and lhmn_temp < 38: #사람이 포토존에 있고, 마스크를 안썼을 경우
+                sound_state = 3
+                print("you should wear mask")
+                past_warned = prnt_warned
+            elif (door_state == 0) and (hmn_state == 1) and (mask_state == 2) and (prnt_warned-past_warned)>3 and lhmn_temp < 38: #사람이 포토존에 있고, 마스크를 잘못 썼을 경우
+                sound_state = 4
+                print("you should wear mask correctly")
+                past_warned = prnt_warned
+            elif (door_state == 0) and (hmn_state == 1) and (prnt_warned-past_warned)>3 and lhmn_temp > 40: #고열 환자일 경우
+                sound_state = 5
+                print("you have a fever {0:.1f}".format(lhmn_temp))
+                past_warned = prnt_warned
             elif(door_state == 1) and (hmn_state == 2) and (is_judged == 1): # 멀쩡한 사람이 통과를 했을 경우 door_state  = 0
                 door_state = 0
                 is_judged = 0
@@ -225,20 +257,48 @@ def control_door(): #받은 신호와 사람 위치에 따라서 문을 열고 �
                 res = requests.get('http://3.35.178.102/emergency/')
             else:
                 pass
+            # print(door_state, hmn_state, mask_state)
             
-            if (pst_door_state == 0) and (door_state == 1):
-                for step in range (100):
-                    pi.set_servo_pulsewidth(25, 1400-8*step)
-                    time.sleep(0.01)
-                pst_door_state = door_state
-            elif(pst_door_state == 1) and (door_state == 0): #door_state == 0
-                for step in range (100):
-                    pi.set_servo_pulsewidth(25, 600+8*step)
-                    time.sleep(0.01)
-                pst_door_state = door_state
+            # if (pst_door_state == 0) and (door_state == 1):
+            #     for step in range (100):
+            #         pi.set_servo_pulsewidth(25, 1400-8*step)
+            #         time.sleep(0.01)
+            #     pst_door_state = door_state
+            # elif(pst_door_state == 1) and (door_state == 0): #door_state == 0
+            #     for step in range (100):
+            #         pi.set_servo_pulsewidth(25, 600+8*step)
+            #         time.sleep(0.01)
+            #     pst_door_state = door_state
+            # else:
+            #     pass
+            # past_noticed = prnt_noticed
+
+def control_door():
+    global door_state
+    pst_door_state = 0
+    past_time = time.time()
+    while True:
+        prnt_time = time.time()
+        prnt_door_state = door_state
+        if(prnt_time-past_time)>0.5:
+            # print(prnt_door_state)
+
+            #### door open ####
+            if (pst_door_state == 0) and (prnt_door_state == 1):
+                for step in range (9):
+                    pi.set_servo_pulsewidth(25, 1400-100*step)
+                    time.sleep(0.05)
+                pst_door_state = prnt_door_state
+
+            #### door close ####
+            elif(pst_door_state == 1) and (prnt_door_state == 0): #door_state == 0
+                for step in range (18):
+                    pi.set_servo_pulsewidth(25, 500+50*step)
+                    time.sleep(0.05)
+                pst_door_state = prnt_door_state
             else:
                 pass
-            past_noticed = prnt_noticed
+            past_time = prnt_time
 
 def measureTemp():
     global hmn_temp
@@ -252,24 +312,47 @@ def measureTemp():
             hmn_temp = 0
         #print(lhmn_temp)
 
-def pushtoAdmin():
-    while True:
-        button.wait_for_press()
-        print("The button was pressed!")
-
 def playSound():
     global sound_state
+    pygame.mixer.init()
+    is_said = 0
+    pst_sound_state = 0
     while True:
         time.sleep(0.2)
         if(sound_state == 1):
-            play(AudioSegment.from_mp3("./sound/passed.mp3"))
+            #play(AudioSegment.from_mp3("./sound/normal.mp3"))
+            pygame.mixer.music.load("./sound/normal.mp3")
+            pygame.mixer.music.play()
+            while pygame.mixer.music.get_busy() == True:
+                continue
         elif(sound_state == 2):
-            play(AudioSegment.from_mp3("./sound/closed.mp3"))
+            #play(AudioSegment.from_mp3("./sound/passed.mp3"))
+            pygame.mixer.music.load("./sound/passed.mp3")
+            pygame.mixer.music.play()
+            while pygame.mixer.music.get_busy() == True:
+                continue
+        elif(sound_state == 3):
+            #play(AudioSegment.from_mp3("./sound/nomask.mp3"))
+            pygame.mixer.music.load("./sound/nomask.mp3")
+            pygame.mixer.music.play()
+            while pygame.mixer.music.get_busy() == True:
+                continue
+        elif(sound_state == 4):
+            # play(AudioSegment.from_mp3("./sound/wrong.mp3"))
+            pygame.mixer.music.load("./sound/wrong.mp3")
+            pygame.mixer.music.play()
+            while pygame.mixer.music.get_busy() == True:
+                continue
+        elif(sound_state == 5):
+            # play(AudioSegment.from_mp3("./sound/hightemp.mp3"))
+            pygame.mixer.music.load("./sound/hightemp.mp3")
+            pygame.mixer.music.play()
+            while pygame.mixer.music.get_busy() == True:
+                continue
         else:
             pass
         sound_state = 0
         
-
 
 global hmn_dist
 global hmn_state
@@ -279,8 +362,9 @@ global imgsaved
 global hmn_temp
 global wrongman
 global sound_state
+global door_state
 
-
+door_state = 0
 hmn_dist = 0
 hmn_state  = 1 
 f_path = None
@@ -292,16 +376,17 @@ sound_state = -1
 pi.set_servo_pulsewidth(25, 1400)
 
 if __name__ =='__main__':
-    proc1 = Thread(target=human_state_check, args=())
-    # proc2 = Thread(target=measureTemp, args=())
-    proc3 = Thread(target=control_door, args=())
-    proc4 = Thread(target=mask_check, args=())
-    proc6 = Thread(target=pushtoAdmin, args=())
-    proc7 = Thread(target=playSound, args=())
-    proc1.start()
-    # proc2.start()
-    proc3.start()
-    proc4.start()
-    proc6.start()
-    proc7.start()
+    thread1 = Thread(target=human_state_check, args=())
+    thread4 = Thread(target=measureTemp, args=())
+    thread2 = Thread(target=control_door, args=())
+    thread3 = Thread(target=mask_check, args=())
+    thread5 = Thread(target=playSound, args=())
+    thread6 = Thread(target=checkingprocess, args=())
+
+    thread1.start()
+    thread4.start()
+    thread2.start()
+    thread3.start()
+    thread5.start()
+    thread6.start()
     app.run(host='0.0.0.0', debug=False, threaded=True)

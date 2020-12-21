@@ -24,14 +24,15 @@ while True:
     cv2.imshow('frame', frame)
 
     if prnt_time-pst_time > 3:
-        # f_path = './image/test.jpg'
-        # cv2.imwrite(f_path,frame)
+        f_path = './image/test.jpg'
+        cv2.imwrite(f_path,frame)
         # with open(f_path,'rb') as f:
-        is_success, buffer = cv2.imencode(".jpg", frame)
-        io_buf = io.BytesIO(buffer)
-        res = requests.post('http://3.35.178.102/gateprediction/', files={'image':io_buf}, data={"temperature":36.5})
-        print(res.text)
+        #is_success, buffer = cv2.imencode(".jpg", frame)
+        #io_buf = io.BytesIO(buffer)
+        #res = requests.post('http://3.35.178.102/gateprediction/', files={'image':io_buf}, data={"temperature":36.5})
+        #print(res.text)
         pst_time = prnt_time
+        print("captured")
 
 
     key = cv2.waitKey(25)

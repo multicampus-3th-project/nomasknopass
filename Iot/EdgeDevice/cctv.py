@@ -13,7 +13,7 @@ with picamera.PiCamera() as camera:
         camera.capture(fname)
         imgfile = open(fname, 'rb')
         res = requests.post('http://3.35.178.102/cctvprediction/', files={'image':imgfile})
-        print("posted img file = " + fname + " and result" + res.text)
+        print("CCTV Result" + res.text)
         count = count + 1
-        time.sleep(3)   
+        time.sleep(6)
     camera.stop_preview()
