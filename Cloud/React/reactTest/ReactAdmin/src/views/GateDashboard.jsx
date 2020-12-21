@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from "axios";
 import useInterval from 'use-interval'
 import PanelHeader from '../components/PanelHeader';
+import ToggleSwitch from '../components/ToggleSwitch';
 
 
 // Wijmo imports
@@ -146,16 +147,27 @@ const GateDashboard = () => {
     { "count": 0 },
     { "count": 0 }]);
   const [visitedCount, setVisitedCount] = useState([]);
+  const [updateStart, setUpdateStart] = useState(false);
 
   useEffect(() => {
     _getDB();
     _getIsPass();
     _getvisitedCount();
-  }, []);
 
-  useInterval(() => {
-    _getDB();
-  }, 6000);
+    let interval = null;
+    if (updateStart) {
+      interval = setInterval(() => {
+        _getDB();
+        _getIsPass();
+        _getvisitedCount();
+      }, 6000);
+    }
+    return () => {
+      if (interval !== null) {
+        clearInterval(interval);
+      }
+    }
+  }, [updateStart]);
 
   const dataEndpoint =
     "https://o43ghtnv70.execute-api.ap-northeast-2.amazonaws.com/dev/data";
@@ -197,11 +209,21 @@ const GateDashboard = () => {
     return totalSales;
   }
 
+  const onUpdateOnClick = (checked) => {
+    setUpdateStart(checked);
+  }
+
+
   return (
     <>
       <PanelHeader size="sm" />
-        <div className="content">
-
+        <div className="cctv">
+        <Row>
+            <Col sm="12" md={{ size: 6}} style={{padding: '20px'}}> 
+                <ToggleSwitch id="newsletter" checked={ updateStart } onChange={ onUpdateOnClick } small={true}/>
+                <label htmlFor="newsletter" className="toggle-label">실시간 업데이트</label>
+            </Col>
+          </Row>
           <Row>
             <Col xs={12} md={4}>
               <Card className="card-chart">

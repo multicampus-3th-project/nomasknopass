@@ -78,7 +78,7 @@ def predict_mask_gate(request):
 
         json_response = {"mask": mask_result,
                          "temperature": temperature_result}
-        load.predictDataConfig.temperature = temperature_result
+        load.PredictDataConfig.temperature = temperature_result
         os.remove(imageSource)
         return JsonResponse(json_response, status=status.HTTP_200_OK)
 
@@ -97,19 +97,24 @@ def predict_mask_cctv(request):
 
     insert_ismask_cctv(mask, nomask, incorrectmask)
 
-    s3_client.upload_file(imageSource, 'kf99-cctv-image', 'cctv-image.jpg')
+    if load.ImageUploadConfig.count == 7:
+        load.ImageUploadConfig.count = 1
 
+    s3_client.upload_file(imageSource, 'kf99-cctv-image', 'cctv-image' + str(load.ImageUploadConfig.count) + '.jpg')
+    load.ImageUploadConfig.count += 1
 
     if nomask > 0 or incorrectmask > 0:
         nomask_state = True
     else:
         nomask_state = False
-    load.predictDataConfig.nomask.append(nomask_state)
+    nomask_state = True
+    load.PredictDataConfig.nomask.append(nomask_state)
     filtering_nomask()
 
     json_response = {"mask": mask,
                      "nomask": nomask,
-                     "incorrectmask": incorrectmask}
+                     "incorrectmask": incorrectmask,
+                     "array" : load.PredictDataConfig.nomask}
 
     os.remove(image_dir + filename)
 
@@ -117,15 +122,15 @@ def predict_mask_cctv(request):
 
 
 def filtering_nomask():
-    if len(load.predictDataConfig.nomask) is 6:
+    if len(load.PredictDataConfig.nomask) is 6:
         isNoti = True
-        for state in load.predictDataConfig.nomask:
+        for state in load.PredictDataConfig.nomask:
             if state is False:
                 isNoti = False
         if isNoti is True:
             notificate_nomask()
         else:
-            del (load.predictDataConfig.nomask[0])
+            del (load.PredictDataConfig.nomask[0])
 
 
 def insert_ismask_cctv(mask, nomask, incorrectmask):
@@ -136,6 +141,7 @@ def insert_ismask_cctv(mask, nomask, incorrectmask):
                 incorrectmask) + ")")
         conn.commit()
         cur.close()
+
 
 @api_view(['POST'])
 def insert_ispass(request):
@@ -150,12 +156,12 @@ def insert_ispass(request):
         lambda_client.invoke(
             FunctionName='insert_DB',
             InvocationType='Event',
-            Payload=json.dumps({"ispass": request.data['ispass'], "temperature": load.predictDataConfig.temperature})
+            Payload=json.dumps({"ispass": request.data['ispass'], "temperature": load.PredictDataConfig.temperature})
         )
     except:
         return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     json_response = {"ispass": ispass,
-                     "temperature": load.predictDataConfig.temperature}
+                     "temperature": load.PredictDataConfig.temperature}
     return HttpResponse(json_response, status=status.HTTP_200_OK)
 
 
@@ -165,7 +171,8 @@ def notificate_emergency(request):
     try:
         sns_client.publish(
             # TargetArn='arn:aws:sns:ap-northeast-2:952312817883:endpoint/GCM/kf99_admin/161d6f80-a767-3162-b6d9-53f41cf46c9d',
-            TargetArn='arn:aws:sns:ap-northeast-2:952312817883:endpoint/GCM/kf99_admin/07c925ad-eb2f-31b0-90d6-23af17158f01',
+            # TargetArn='arn:aws:sns:ap-northeast-2:952312817883:endpoint/GCM/kf99_admin/07c925ad-eb2f-31b0-90d6-23af17158f01',
+            TargetArn='arn:aws:sns:ap-northeast-2:952312817883:endpoint/GCM/kf99_admin/c3478851-49e2-312e-b8c6-157c831f338e',
             MessageStructure='json',
             Message=json.dumps(message))
     except:
@@ -183,10 +190,11 @@ def notificate_nomask():
     message = {"GCM": "{ \"data\": { \"title\": \"KF99 CCTV\",\"message\": \"마스크를 벗은 사람이 감지되었습니다. \" } }"}
     sns_client.publish(
         # TargetArn='arn:aws:sns:ap-northeast-2:952312817883:endpoint/GCM/kf99_admin/161d6f80-a767-3162-b6d9-53f41cf46c9d',
-        TargetArn='arn:aws:sns:ap-northeast-2:952312817883:endpoint/GCM/kf99_admin/07c925ad-eb2f-31b0-90d6-23af17158f01',
+        # TargetArn='arn:aws:sns:ap-northeast-2:952312817883:endpoint/GCM/kf99_admin/07c925ad-eb2f-31b0-90d6-23af17158f01',
+        TargetArn='arn:aws:sns:ap-northeast-2:952312817883:endpoint/GCM/kf99_admin/c3478851-49e2-312e-b8c6-157c831f338e',
         MessageStructure='json',
         Message=json.dumps(message))
-    load.predictDataConfig.nomask = []
+    load.PredictDataConfig.nomask = []
 
 
 # 얼굴만 자르는 함수 코드
@@ -222,36 +230,94 @@ def make_crop_img(image_file, detector):
 
 
 # 1장만 할 경우
-def predict_one(filename):
-    image = cv2.imread(image_dir + filename)
+def predict_one(chunk):
+    # image = cv2.imread(image_dir + filename)
+    #
+    # try:
+    #     images = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    #     image, message = make_crop_img(images, load.LoadConfig.detector)
+    #     face_input = cv2.resize(image, dsize=(224, 224))
+    #     face_input = preprocess_input(face_input)
+    #     face_input = np.expand_dims(face_input, axis=0)
+    #     mask1 = load.LoadConfig.model.predict(face_input)
+    #     result = np.argmax(mask1)
+    #
+    #     if result == 0:
+    #         return 0
+    #
+    #     elif result == 1:
+    #         if message == 'not_detected_nose':
+    #             return 0
+    #         else:
+    #             return 1
+    #
+    #     else:
+    #         if message == 'not_detected_nose':
+    #             return 0
+    #         else:
+    #             return 2
+    #
+    #
+    # except:
+    #     return 4
 
-    try:
-        images = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image, message = make_crop_img(images, load.LoadConfig.detector)
-        face_input = cv2.resize(image, dsize=(224, 224))
-        face_input = preprocess_input(face_input)
-        face_input = np.expand_dims(face_input, axis=0)
-        mask1 = load.LoadConfig.model.predict(face_input)
-        result = np.argmax(mask1)
+    cap = chunk
+    font = cv2.FONT_HERSHEY_PLAIN
+    colors = np.random.uniform(0, 255, size=(100, 3))
+    img = cv2.imread(cap)
+    height, width, _ = img.shape
 
-        if result == 0:
-            return 0
+    blob = cv2.dnn.blobFromImage(img, 1 / 255, (416, 416), (0, 0, 0), swapRB=True, crop=False)
+    load.LoadConfig.net.setInput(blob)
+    output_layers_names = load.LoadConfig.net.getUnconnectedOutLayersNames()
+    layerOutputs = load.LoadConfig.net.forward(output_layers_names)
 
-        elif result == 1:
-            if message == 'not_detected_nose':
-                return 0
-            else:
-                return 1
+    boxes = []
+    confidences = []
+    class_ids = []
 
+    for output in layerOutputs:
+        for detection in output:
+            scores = detection[5:]
+            class_id = np.argmax(scores)
+            confidence = scores[class_id]
+
+            if confidence > 0:
+                center_x = int(detection[0] * width)
+                center_y = int(detection[1] * height)
+                w = int(detection[2] * width)
+                h = int(detection[3] * height)
+
+                x = int(center_x - w / 2)
+                y = int(center_y - h / 2)
+
+                boxes.append([x, y, w, h])
+                confidences.append((float(confidence)))
+                class_ids.append(class_id)
+
+    indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.45, 0.4)
+
+    return_label = ''
+
+    area = []
+
+    if len(indexes) > 0:
+        for i in indexes.flatten():
+            x, y, w, h = boxes[i]
+            area.append([w * h, i])
+        print(area)
+        l = max(area)[1]
+        x, y, w, h = boxes[l]
+        label = str(load.LoadConfig.classes[class_ids[l]])
+
+        if label == 'MASK':
+            label = 0
+        elif label == 'NMASK':
+            label = 1
         else:
-            if message == 'not_detected_nose':
-                return 0
-            else:
-                return 2
+            label = 2
 
-
-    except:
-        return 4
+    return label
 
 
 def predict_cctv(chunk):

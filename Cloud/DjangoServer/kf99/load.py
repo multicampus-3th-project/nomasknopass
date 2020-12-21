@@ -18,13 +18,13 @@ class LoadConfig(AppConfig):
         # 파일 주소 확인
         classes = f.read().splitlines()
 
-class predictDataConfig(AppConfig):
+
+class PredictDataConfig(AppConfig):
     # Gate 체온 데이터
     temperature = 0
     # CCTV 마스크 미착용자 감지 카운트
     nomask = []
 
 
-
-
-
+class ImageUploadConfig(AppConfig):
+    count = 1
