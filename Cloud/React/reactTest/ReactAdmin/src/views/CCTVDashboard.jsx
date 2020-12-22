@@ -39,12 +39,7 @@ import {
   UncontrolledTooltip,
 } from "reactstrap";
 
-const images_url = [{"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
-                {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
-                {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
-                {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
-                {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
-                {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'}]
+
 
 const CCTVReport = ({ data, palette }) => {
   return (
@@ -52,10 +47,9 @@ const CCTVReport = ({ data, palette }) => {
       <wjChart.FlexChart itemsSource={data} bindingX="time" chartType="Line" palette={palette}>
         <wjChart.FlexChartLegend position="Bottom"></wjChart.FlexChartLegend>
         <wjChart.FlexChartAxis wjProperty="axisY"></wjChart.FlexChartAxis>
-        <wjChart.FlexChartSeries binding="nomask" name="마스크 미착용" chartType={wjCharts.ChartType.LineSymbols}></wjChart.FlexChartSeries>
+        <wjChart.FlexChartSeries binding="totalnomask" name="마스크 미착용" chartType={wjCharts.ChartType.LineSymbols}></wjChart.FlexChartSeries>
         <wjChart.FlexChartLineMarker isVisible={false} lines="Both" interaction="Move">
         </wjChart.FlexChartLineMarker>
-        {/* <wjChartAnimate.FlexChartAnimation animationMode="Point"></wjChartAnimate.FlexChartAnimation> */}
       </wjChart.FlexChart>
     </div>
   )
@@ -71,23 +65,19 @@ const CCTVReportOne = ({ data, palette }) => {
 }
 const CCTVDashboard = () => {
   const [CCTVData, setCCTVData] = useState([{ 'mask': 0, 'nomask': 0, 'incorrectmask': 0 }]);
-  const [palette, setPalette] = useState(['rgba(255,136,0,1)']);
+  const [palette] = useState(['rgba(255,136,0,1)']);
   const [updateStart, setUpdateStart] = useState(false);
-  const [images, setImages] = useState([{"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
-  {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
-  {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
-  {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
-  {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'},
-  {"url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image.jpg'}]
-)
+  const [images, setImages] = useState([]);
 
   useEffect(() => {
     _getCCTVData();
+    _refreshImages();
+
     let interval = null;
     if (updateStart) {
       interval = setInterval(() => {
         _getCCTVData();
-        setImages(images_url);
+        _refreshImages();
         console.log("하는거맞자너..");
       }, 6000);
     }
@@ -108,14 +98,35 @@ const CCTVDashboard = () => {
       console.log("지금나온거야? " + res.data);
     })
   }
-
-  function x(e) {
-    e.preventDefault();
-    const start = updateStart;
-    setUpdateStart(!start);
+  const _refreshImages = () => {
+    let images_url = [{
+      "url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image1.jpg?random_number=' + new Date().getTime(),
+    },
+    {
+      "url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image2.jpg?random_number=' + new Date().getTime(),
+      "hash": Date.now()
+    },
+    {
+      "url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image3.jpg?random_number=' + new Date().getTime(),
+      "hash": Date.now()
+    },
+    {
+      "url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image4.jpg?random_number=' + new Date().getTime(),
+      "hash": Date.now()
+    },
+    {
+      "url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image5.jpg?random_number=' + new Date().getTime(),
+      "hash": Date.now()
+    },
+    {
+      "url": 'https://kf99-cctv-image.s3.ap-northeast-2.amazonaws.com/cctv-image6.jpg?random_number=' + new Date().getTime(),
+      "hash": Date.now()
+    }]
+    setImages(images_url);
+    console.log("한거지")
   }
 
-  const onNewsletterChange = (checked) => {
+  const onUpdateOnClick = (checked) => {
     setUpdateStart(checked);
   }
 
@@ -125,7 +136,7 @@ const CCTVDashboard = () => {
         <div className="cctv">
           <Row>
             <Col sm="12" md={{ size: 6}} style={{padding: '20px'}}> 
-                <ToggleSwitch id="newsletter" checked={ updateStart } onChange={ onNewsletterChange } small={true}/>
+                <ToggleSwitch id="newsletter" checked={ updateStart } onChange={ onUpdateOnClick } small={true}/>
                 <label htmlFor="newsletter" className="toggle-label">실시간 업데이트</label>
             </Col>
           </Row>

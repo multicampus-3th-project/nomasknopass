@@ -1241,8 +1241,7 @@ p {
 }
 h1, h2, h3, h4, h6 {
   font-weight: 400;
-  /* font-family: 'Noto Sans KR', sans-serif; */
-  font-family: 'Jeju Gothic', serif;
+  font-family: 'Jeju-Gothic';
  }
 h5 {
   font-family: 'Montserrat', sans-serif;
